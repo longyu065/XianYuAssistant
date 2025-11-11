@@ -1,7 +1,8 @@
 package com.feijimiao.xianyuassistant.controller;
 
-import com.feijimiao.xianyuassistant.model.QRLoginResponse;
-import com.feijimiao.xianyuassistant.model.QRStatusResponse;
+import com.feijimiao.xianyuassistant.common.ResultObject;
+import com.feijimiao.xianyuassistant.controller.model.QRLoginResponse;
+import com.feijimiao.xianyuassistant.controller.model.QRStatusResponse;
 import com.feijimiao.xianyuassistant.service.QRLoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,31 +24,32 @@ public class QRLoginController {
      * 生成二维码
      */
     @PostMapping("/generate")
-    public QRLoginResponse generateQRCode() {
-        return qrLoginService.generateQRCode();
+    public ResultObject<QRLoginResponse> generateQRCode() {
+        return ResultObject.success(qrLoginService.generateQRCode());
     }
     
     /**
      * 获取会话状态
      */
-    @GetMapping("/status/{sessionId}")
-    public QRStatusResponse getSessionStatus(@PathVariable String sessionId) {
-        return qrLoginService.getSessionStatus(sessionId);
+    @PostMapping("/status/{sessionId}")
+    public ResultObject<QRStatusResponse> getSessionStatus(@PathVariable String sessionId) {
+        return ResultObject.success(qrLoginService.getSessionStatus(sessionId));
     }
     
     /**
      * 获取会话Cookie
      */
-    @GetMapping("/cookies/{sessionId}")
-    public Map<String, String> getSessionCookies(@PathVariable String sessionId) {
-        return qrLoginService.getSessionCookies(sessionId);
+    @PostMapping("/cookies/{sessionId}")
+    public ResultObject<Map<String, String>> getSessionCookies(@PathVariable String sessionId) {
+        return ResultObject.success(qrLoginService.getSessionCookies(sessionId));
     }
     
     /**
      * 清理过期会话
      */
     @PostMapping("/cleanup")
-    public void cleanupExpiredSessions() {
+    public ResultObject<Void> cleanupExpiredSessions() {
         qrLoginService.cleanupExpiredSessions();
+        return ResultObject.success(null, "清理完成");
     }
 }

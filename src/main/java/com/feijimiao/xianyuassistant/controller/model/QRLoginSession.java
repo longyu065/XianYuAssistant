@@ -1,4 +1,4 @@
-package com.feijimiao.xianyuassistant.model;
+package com.feijimiao.xianyuassistant.controller.model;
 
 import lombok.Data;
 import java.util.HashMap;

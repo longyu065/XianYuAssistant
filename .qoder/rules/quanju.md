@@ -1,3 +1,7 @@
+---
+trigger: always_on
+alwaysApply: true
+---
 每一次的修改，必须遵循以下原则：
 全局规范：
 1、能复用代码，必须复用，避免冗余代码
