@@ -193,7 +193,9 @@
                     }
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
+                // 从ResultObject中获取实际数据
+                const data = result.data;
                 
                 if (data.success) {
                     sessionId = data.sessionId;
@@ -232,8 +234,16 @@
             if (!sessionId) return;
             
             try {
-                const response = await fetch(`/api/qrlogin/status/${sessionId}`);
-                const data = await response.json();
+                // 修改为POST请求方式
+                const response = await fetch(`/api/qrlogin/status/${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                // 从ResultObject中获取实际数据
+                const data = result.data;
                 
                 const statusDiv = document.getElementById('status-4a9b2e');
                 const cookieDiv = document.getElementById('cookie-info-3f6a8b');
