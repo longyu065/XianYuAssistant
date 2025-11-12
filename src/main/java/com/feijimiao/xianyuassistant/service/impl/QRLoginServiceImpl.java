@@ -13,9 +13,8 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -33,9 +32,8 @@ import java.util.regex.Pattern;
  * 二维码登录服务实现
  */
 @Service
+@Slf4j
 public class QRLoginServiceImpl implements QRLoginService {
-    
-    private static final Logger logger = LoggerFactory.getLogger(QRLoginServiceImpl.class);
     
     private final Map<String, QRLoginSession> sessions = new ConcurrentHashMap<>();
     private final OkHttpClient httpClient;
@@ -139,7 +137,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                         .build();
                 
                 try (Response response2 = httpClient.newCall(request2).execute()) {
-                    logger.info("获取m_h5_tk成功: {}", session.getSessionId());
+                    log.info("获取m_h5_tk成功: {}", session.getSessionId());
                 }
             }
         }
@@ -173,7 +171,7 @@ public class QRLoginServiceImpl implements QRLoginService {
         try (Response response = httpClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String html = response.body().string();
-                logger.debug("获取登录页面HTML长度: {}", html.length());
+                log.debug("获取登录页面HTML长度: {}", html.length());
                 
                 // 正则匹配需要的json数据
                 Pattern pattern = Pattern.compile("window\\.viewData\\s*=\\s*(\\{.*?\\});", Pattern.DOTALL);
@@ -181,7 +179,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                 
                 if (matcher.find()) {
                     String jsonString = matcher.group(1);
-                    logger.debug("提取到的viewData: {}", jsonString.substring(0, Math.min(200, jsonString.length())));
+                    log.debug("提取到的viewData: {}", jsonString.substring(0, Math.min(200, jsonString.length())));
                     
                     JsonObject viewData = gson.fromJson(jsonString, JsonObject.class);
                     JsonObject loginFormData = viewData.getAsJsonObject("loginFormData");
@@ -197,19 +195,19 @@ public class QRLoginServiceImpl implements QRLoginService {
                         });
                         params.put("umidTag", "SERVER");
                         session.getParams().putAll(params);
-                        logger.info("获取登录参数成功: {}, 参数数量: {}", session.getSessionId(), params.size());
+                        log.info("获取登录参数成功: {}, 参数数量: {}", session.getSessionId(), params.size());
                         return params;
                     } else {
-                        logger.error("viewData中没有loginFormData字段，viewData keys: {}", viewData.keySet());
+                        log.error("viewData中没有loginFormData字段，viewData keys: {}", viewData.keySet());
                     }
                 } else {
-                    logger.error("未匹配到window.viewData，尝试查找其他模式");
+                    log.error("未匹配到window.viewData，尝试查找其他模式");
                     // 尝试其他可能的模式
                     Pattern pattern2 = Pattern.compile("var\\s+viewData\\s*=\\s*(\\{.*?\\});", Pattern.DOTALL);
                     Matcher matcher2 = pattern2.matcher(html);
                     if (matcher2.find()) {
                         String jsonString = matcher2.group(1);
-                        logger.debug("使用备用模式提取到viewData");
+                        log.debug("使用备用模式提取到viewData");
                         JsonObject viewData = gson.fromJson(jsonString, JsonObject.class);
                         JsonObject loginFormData = viewData.getAsJsonObject("loginFormData");
                         if (loginFormData != null) {
@@ -223,21 +221,21 @@ public class QRLoginServiceImpl implements QRLoginService {
                             });
                             params.put("umidTag", "SERVER");
                             session.getParams().putAll(params);
-                            logger.info("获取登录参数成功(备用模式): {}", session.getSessionId());
+                            log.info("获取登录参数成功(备用模式): {}", session.getSessionId());
                             return params;
                         }
                     }
                 }
                 
                 // 如果都失败了，保存HTML用于调试
-                logger.error("无法提取登录参数，HTML内容前1000字符: {}", html.substring(0, Math.min(1000, html.length())));
+                log.error("无法提取登录参数，HTML内容前1000字符: {}", html.substring(0, Math.min(1000, html.length())));
                 
                 // 尝试直接查找所有可能的参数
                 Map<String, String> params = extractParamsFromHtml(html);
                 if (!params.isEmpty()) {
                     params.put("umidTag", "SERVER");
                     session.getParams().putAll(params);
-                    logger.info("使用备用方法提取到参数: {}", params.keySet());
+                    log.info("使用备用方法提取到参数: {}", params.keySet());
                     return params;
                 }
                 
@@ -274,7 +272,7 @@ public class QRLoginServiceImpl implements QRLoginService {
             try (Response response = httpClient.newCall(request).execute()) {
                 if (response.isSuccessful()) {
                     String responseBody = response.body().string();
-                    logger.debug("获取二维码接口原始响应: {}", responseBody);
+                    log.debug("获取二维码接口原始响应: {}", responseBody);
                     
                     JsonObject results = gson.fromJson(responseBody, JsonObject.class);
                     JsonObject content = results.getAsJsonObject("content");
@@ -301,7 +299,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                         // 启动状态监控
                         new Thread(() -> monitorQRStatus(sessionId)).start();
                         
-                        logger.info("二维码生成成功: {}", sessionId);
+                        log.info("二维码生成成功: {}", sessionId);
                         return new QRLoginResponse(true, sessionId, qrDataUrl, null);
                     } else {
                         return new QRLoginResponse(false, "获取登录二维码失败");
@@ -312,7 +310,7 @@ public class QRLoginServiceImpl implements QRLoginService {
             return new QRLoginResponse(false, "生成二维码失败");
             
         } catch (Exception e) {
-            logger.error("二维码生成过程中发生异常", e);
+            log.error("二维码生成过程中发生异常", e);
             return new QRLoginResponse(false, "生成二维码失败: " + e.getMessage());
         }
     }
@@ -332,7 +330,7 @@ public class QRLoginServiceImpl implements QRLoginService {
             Matcher matcher = pattern.matcher(html);
             if (matcher.find()) {
                 params.put(paramName, matcher.group(1));
-                logger.debug("提取到参数 {}: {}", paramName, matcher.group(1));
+                log.debug("提取到参数 {}: {}", paramName, matcher.group(1));
             }
         }
         
@@ -370,7 +368,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                 return;
             }
             
-            logger.info("开始监控二维码状态: {}", sessionId);
+            log.info("开始监控二维码状态: {}", sessionId);
             
             long maxWaitTime = 300000; // 5分钟
             long startTime = System.currentTimeMillis();
@@ -387,32 +385,32 @@ public class QRLoginServiceImpl implements QRLoginService {
                     
                     if ("CONFIRMED".equals(qrCodeStatus)) {
                         // 登录确认
-                        logger.info("扫码登录成功: {}, UNB: {}", sessionId, session.getUnb());
+                        log.info("扫码登录成功: {}, UNB: {}", sessionId, session.getUnb());
                         break;
                     } else if ("NEW".equals(qrCodeStatus)) {
                         // 二维码未被扫描，继续轮询
                     } else if ("EXPIRED".equals(qrCodeStatus)) {
                         // 二维码已过期
                         session.setStatus("expired");
-                        logger.info("二维码已过期: {}", sessionId);
+                        log.info("二维码已过期: {}", sessionId);
                         break;
                     } else if ("SCANED".equals(qrCodeStatus)) {
                         // 二维码已被扫描，等待确认
                         if ("waiting".equals(session.getStatus())) {
                             session.setStatus("scanned");
-                            logger.info("二维码已扫描，等待确认: {}", sessionId);
+                            log.info("二维码已扫描，等待确认: {}", sessionId);
                         }
                     } else {
                         // 用户取消确认
                         session.setStatus("cancelled");
-                        logger.info("用户取消登录: {}", sessionId);
+                        log.info("用户取消登录: {}", sessionId);
                         break;
                     }
                     
                     Thread.sleep(800); // 每0.8秒检查一次
                     
                 } catch (Exception e) {
-                    logger.error("监控二维码状态异常", e);
+                    log.error("监控二维码状态异常", e);
                     Thread.sleep(2000);
                 }
             }
@@ -420,11 +418,11 @@ public class QRLoginServiceImpl implements QRLoginService {
             // 超时处理
             if (session != null && !Arrays.asList("success", "expired", "cancelled", "verification_required").contains(session.getStatus())) {
                 session.setStatus("expired");
-                logger.info("二维码监控超时，标记为过期: {}", sessionId);
+                log.info("二维码监控超时，标记为过期: {}", sessionId);
             }
             
         } catch (Exception e) {
-            logger.error("监控二维码状态失败", e);
+            log.error("监控二维码状态失败", e);
             QRLoginSession session = sessions.get(sessionId);
             if (session != null) {
                 session.setStatus("expired");
@@ -463,7 +461,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                                 session.setStatus("verification_required");
                                 String iframeUrl = data.get("iframeRedirectUrl").getAsString();
                                 session.setVerificationUrl(iframeUrl);
-                                logger.warn("账号被风控，需要手机验证: {}, URL: {}", session.getSessionId(), iframeUrl);
+                                log.warn("账号被风控，需要手机验证: {}, URL: {}", session.getSessionId(), iframeUrl);
                             } else {
                                 // 登录成功，保存Cookie
                                 session.setStatus("success");
@@ -545,7 +543,7 @@ public class QRLoginServiceImpl implements QRLoginService {
         
         expiredSessions.forEach(sessionId -> {
             sessions.remove(sessionId);
-            logger.info("清理过期会话: {}", sessionId);
+            log.info("清理过期会话: {}", sessionId);
         });
     }
     
@@ -568,7 +566,7 @@ public class QRLoginServiceImpl implements QRLoginService {
             
             return hexString.toString();
         } catch (Exception e) {
-            logger.error("MD5加密失败", e);
+            log.error("MD5加密失败", e);
             return "";
         }
     }

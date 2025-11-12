@@ -1,16 +1,13 @@
 package com.feijimiao.xianyuassistant.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class CookieUtils {
-    
-    private static final Logger logger = LoggerFactory.getLogger(CookieUtils.class);
     
     /**
      * 将Cookie字符串转换为Map
@@ -98,7 +95,7 @@ public class CookieUtils {
             
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            logger.error("生成签名失败", e);
+            log.error("生成签名失败", e);
             return "";
         }
     }
