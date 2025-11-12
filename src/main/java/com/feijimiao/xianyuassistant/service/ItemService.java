@@ -9,26 +9,27 @@ import com.feijimiao.xianyuassistant.model.dto.*;
 public interface ItemService {
 
     /**
-     * 获取指定页的商品信息
+     * 刷新商品数据
+     * 从闲鱼API获取最新商品信息并更新到数据库
+     *
+     * @param reqDTO 请求参数
+     * @return 刷新结果（包含更新成功的商品ID列表）
+     */
+    ResultObject<RefreshItemsRespDTO> refreshItems(AllItemsReqDTO reqDTO);
+    
+    /**
+     * 从数据库获取商品列表
      *
      * @param reqDTO 请求参数
      * @return 商品列表
      */
-    ResultObject<ItemListRespDTO> getItemList(ItemListReqDTO reqDTO);
-
+    ResultObject<ItemListFromDbRespDTO> getItemsFromDb(ItemListFromDbReqDTO reqDTO);
+    
     /**
-     * 获取所有商品信息（自动分页）
+     * 获取商品详情
      *
      * @param reqDTO 请求参数
-     * @return 所有商品信息
+     * @return 商品详情
      */
-    ResultObject<AllItemsRespDTO> getAllItems(AllItemsReqDTO reqDTO);
-
-    /**
-     * 从数据库获取商品信息
-     *
-     * @param reqDTO 请求参数
-     * @return 商品列表
-     */
-    ResultObject<ItemDbRespDTO> getItemsFromDb(ItemDbReqDTO reqDTO);
+    ResultObject<ItemDetailRespDTO> getItemDetail(ItemDetailReqDTO reqDTO);
 }
