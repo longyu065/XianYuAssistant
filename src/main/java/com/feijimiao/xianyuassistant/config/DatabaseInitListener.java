@@ -11,9 +11,11 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.*;
 
 /**
  * 数据库初始化监听器
+ * 自动检测并创建缺失的表和字段
  */
 @Slf4j
 @Component
@@ -35,63 +37,336 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         }
         
         log.info("=".repeat(60));
-        log.info("数据库初始化完成，开始验证...");
+        log.info("开始数据库自动迁移...");
         log.info("=".repeat(60));
         
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
             
-            // 查询表信息
-            ResultSet tables = stmt.executeQuery(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-            );
+            // 1. 检查并创建缺失的表
+            checkAndCreateTables(stmt);
             
-            log.info("📊 数据库表列表:");
-            while (tables.next()) {
-                String tableName = tables.getString("name");
-                
-                // 查询表的记录数
-                ResultSet count = stmt.executeQuery("SELECT COUNT(*) as cnt FROM " + tableName);
-                int recordCount = 0;
-                if (count.next()) {
-                    recordCount = count.getInt("cnt");
-                }
-                count.close();
-                
-                log.info("  ✓ {} (记录数: {})", tableName, recordCount);
-            }
-            tables.close();
+            // 2. 检查并添加缺失的字段
+            checkAndAddColumns(stmt);
             
-            // 查询索引信息
-            ResultSet indexes = stmt.executeQuery(
-                "SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-            );
+            // 3. 检查并创建缺失的索引
+            checkAndCreateIndexes(stmt);
             
-            log.info("📑 数据库索引列表:");
-            while (indexes.next()) {
-                String indexName = indexes.getString("name");
-                log.info("  ✓ {}", indexName);
-            }
-            indexes.close();
+            // 4. 检查并创建缺失的触发器
+            checkAndCreateTriggers(stmt);
             
-            // 查询触发器信息
-            ResultSet triggers = stmt.executeQuery(
-                "SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name"
-            );
+            log.info("=".repeat(60));
+            log.info("数据库迁移完成，开始验证...");
+            log.info("=".repeat(60));
             
-            log.info("⚡ 数据库触发器列表:");
-            while (triggers.next()) {
-                String triggerName = triggers.getString("name");
-                log.info("  ✓ {}", triggerName);
-            }
-            triggers.close();
+            // 验证数据库状态
+            verifyDatabase(stmt);
             
             log.info("=".repeat(60));
             log.info("✅ 数据库验证完成，系统就绪！");
             log.info("=".repeat(60));
             
         } catch (Exception e) {
-            log.error("验证数据库失败", e);
+            log.error("数据库初始化失败", e);
+        }
+    }
+    
+    /**
+     * 检查并创建缺失的表
+     */
+    private void checkAndCreateTables(Statement stmt) throws Exception {
+        log.info("🔍 检查数据库表...");
+        
+        // 获取现有表列表
+        Set<String> existingTables = new HashSet<>();
+        ResultSet tables = stmt.executeQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        );
+        while (tables.next()) {
+            existingTables.add(tables.getString("name"));
+        }
+        tables.close();
+        
+        // 定义需要的表及其创建SQL
+        Map<String, String> requiredTables = new LinkedHashMap<>();
+        
+        // 闲鱼账号表
+        requiredTables.put("xianyu_account", 
+            "CREATE TABLE xianyu_account (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "account_note VARCHAR(100), " +
+            "unb VARCHAR(100), " +
+            "status TINYINT DEFAULT 1, " +
+            "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP" +
+            ")");
+        
+        // 闲鱼Cookie表
+        requiredTables.put("xianyu_cookie",
+            "CREATE TABLE xianyu_cookie (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "cookie_text TEXT, " +
+            "m_h5_tk VARCHAR(500), " +
+            "cookie_status TINYINT DEFAULT 1, " +
+            "expire_time DATETIME, " +
+            "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
+        // 闲鱼商品信息表
+        requiredTables.put("xianyu_goods_info",
+            "CREATE TABLE xianyu_goods_info (" +
+            "id BIGINT PRIMARY KEY, " +
+            "xy_good_id VARCHAR(100) NOT NULL, " +
+            "title VARCHAR(500), " +
+            "cover_pic TEXT, " +
+            "info_pic TEXT, " +
+            "detail_info TEXT, " +
+            "sold_price VARCHAR(50), " +
+            "status TINYINT DEFAULT 0, " +
+            "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP" +
+            ")");
+        
+        // 检查并创建缺失的表
+        int createdCount = 0;
+        for (Map.Entry<String, String> entry : requiredTables.entrySet()) {
+            String tableName = entry.getKey();
+            String createSql = entry.getValue();
+            
+            if (!existingTables.contains(tableName)) {
+                log.info("  ➕ 创建表: {}", tableName);
+                stmt.execute(createSql);
+                createdCount++;
+            } else {
+                log.info("  ✓ 表已存在: {}", tableName);
+            }
+        }
+        
+        if (createdCount > 0) {
+            log.info("✅ 创建了 {} 个新表", createdCount);
+        }
+    }
+    
+    /**
+     * 检查并添加缺失的字段
+     */
+    private void checkAndAddColumns(Statement stmt) throws Exception {
+        log.info("🔍 检查表字段...");
+        
+        // 定义需要检查的表和字段
+        Map<String, List<ColumnDef>> tableColumns = new LinkedHashMap<>();
+        
+        // xianyu_cookie 表需要的字段
+        List<ColumnDef> cookieColumns = new ArrayList<>();
+        cookieColumns.add(new ColumnDef("m_h5_tk", "VARCHAR(500)", "ALTER TABLE xianyu_cookie ADD COLUMN m_h5_tk VARCHAR(500)"));
+        tableColumns.put("xianyu_cookie", cookieColumns);
+        
+        int addedCount = 0;
+        for (Map.Entry<String, List<ColumnDef>> entry : tableColumns.entrySet()) {
+            String tableName = entry.getKey();
+            List<ColumnDef> columns = entry.getValue();
+            
+            // 检查表是否存在
+            if (!tableExists(stmt, tableName)) {
+                continue;
+            }
+            
+            // 获取表的现有字段
+            Set<String> existingColumns = getTableColumns(stmt, tableName);
+            
+            // 检查并添加缺失的字段
+            for (ColumnDef column : columns) {
+                if (!existingColumns.contains(column.name.toLowerCase())) {
+                    log.info("  ➕ 添加字段: {}.{}", tableName, column.name);
+                    stmt.execute(column.alterSql);
+                    addedCount++;
+                } else {
+                    log.debug("  ✓ 字段已存在: {}.{}", tableName, column.name);
+                }
+            }
+        }
+        
+        if (addedCount > 0) {
+            log.info("✅ 添加了 {} 个新字段", addedCount);
+        } else {
+            log.info("✓ 所有字段都已存在");
+        }
+    }
+    
+    /**
+     * 检查并创建缺失的索引
+     */
+    private void checkAndCreateIndexes(Statement stmt) throws Exception {
+        log.info("🔍 检查数据库索引...");
+        
+        // 获取现有索引
+        Set<String> existingIndexes = new HashSet<>();
+        ResultSet indexes = stmt.executeQuery(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'"
+        );
+        while (indexes.next()) {
+            existingIndexes.add(indexes.getString("name"));
+        }
+        indexes.close();
+        
+        // 定义需要的索引
+        Map<String, String> requiredIndexes = new LinkedHashMap<>();
+        requiredIndexes.put("idx_account_unb", 
+            "CREATE INDEX IF NOT EXISTS idx_account_unb ON xianyu_account(unb)");
+        requiredIndexes.put("idx_cookie_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_cookie_account_id ON xianyu_cookie(xianyu_account_id)");
+        requiredIndexes.put("idx_cookie_status",
+            "CREATE INDEX IF NOT EXISTS idx_cookie_status ON xianyu_cookie(cookie_status)");
+        requiredIndexes.put("idx_goods_xy_good_id",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id)");
+        requiredIndexes.put("idx_goods_status",
+            "CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status)");
+        
+        int createdCount = 0;
+        for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {
+            String indexName = entry.getKey();
+            String createSql = entry.getValue();
+            
+            if (!existingIndexes.contains(indexName)) {
+                log.info("  ➕ 创建索引: {}", indexName);
+                stmt.execute(createSql);
+                createdCount++;
+            } else {
+                log.debug("  ✓ 索引已存在: {}", indexName);
+            }
+        }
+        
+        if (createdCount > 0) {
+            log.info("✅ 创建了 {} 个新索引", createdCount);
+        } else {
+            log.info("✓ 所有索引都已存在");
+        }
+    }
+    
+    /**
+     * 检查并创建缺失的触发器
+     */
+    private void checkAndCreateTriggers(Statement stmt) throws Exception {
+        log.info("🔍 检查数据库触发器...");
+        
+        // 获取现有触发器
+        Set<String> existingTriggers = new HashSet<>();
+        ResultSet triggers = stmt.executeQuery(
+            "SELECT name FROM sqlite_master WHERE type='trigger'"
+        );
+        while (triggers.next()) {
+            existingTriggers.add(triggers.getString("name"));
+        }
+        triggers.close();
+        
+        // 定义需要的触发器
+        Map<String, String> requiredTriggers = new LinkedHashMap<>();
+        requiredTriggers.put("update_xianyu_account_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_account_time " +
+            "AFTER UPDATE ON xianyu_account " +
+            "BEGIN " +
+            "UPDATE xianyu_account SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_cookie_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_cookie_time " +
+            "AFTER UPDATE ON xianyu_cookie " +
+            "BEGIN " +
+            "UPDATE xianyu_cookie SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_goods_info_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_info_time " +
+            "AFTER UPDATE ON xianyu_goods_info " +
+            "BEGIN " +
+            "UPDATE xianyu_goods_info SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        
+        int createdCount = 0;
+        for (Map.Entry<String, String> entry : requiredTriggers.entrySet()) {
+            String triggerName = entry.getKey();
+            String createSql = entry.getValue();
+            
+            if (!existingTriggers.contains(triggerName)) {
+                log.info("  ➕ 创建触发器: {}", triggerName);
+                stmt.execute(createSql);
+                createdCount++;
+            } else {
+                log.debug("  ✓ 触发器已存在: {}", triggerName);
+            }
+        }
+        
+        if (createdCount > 0) {
+            log.info("✅ 创建了 {} 个新触发器", createdCount);
+        } else {
+            log.info("✓ 所有触发器都已存在");
+        }
+    }
+    
+    /**
+     * 验证数据库状态
+     */
+    private void verifyDatabase(Statement stmt) throws Exception {
+        // 查询表信息
+        ResultSet tables = stmt.executeQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        );
+        
+        log.info("📊 数据库表列表:");
+        while (tables.next()) {
+            String tableName = tables.getString("name");
+            
+            // 查询表的记录数
+            ResultSet count = stmt.executeQuery("SELECT COUNT(*) as cnt FROM " + tableName);
+            int recordCount = 0;
+            if (count.next()) {
+                recordCount = count.getInt("cnt");
+            }
+            count.close();
+            
+            log.info("  ✓ {} (记录数: {})", tableName, recordCount);
+        }
+        tables.close();
+    }
+    
+    /**
+     * 检查表是否存在
+     */
+    private boolean tableExists(Statement stmt, String tableName) throws Exception {
+        ResultSet rs = stmt.executeQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "'"
+        );
+        boolean exists = rs.next();
+        rs.close();
+        return exists;
+    }
+    
+    /**
+     * 获取表的所有字段名
+     */
+    private Set<String> getTableColumns(Statement stmt, String tableName) throws Exception {
+        Set<String> columns = new HashSet<>();
+        ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + tableName + ")");
+        while (rs.next()) {
+            columns.add(rs.getString("name").toLowerCase());
+        }
+        rs.close();
+        return columns;
+    }
+    
+    /**
+     * 字段定义
+     */
+    private static class ColumnDef {
+        String name;
+        String type;
+        String alterSql;
+        
+        ColumnDef(String name, String type, String alterSql) {
+            this.name = name;
+            this.type = type;
+            this.alterSql = alterSql;
         }
     }
 }

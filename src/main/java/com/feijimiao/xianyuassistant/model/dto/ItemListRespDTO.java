@@ -37,5 +37,5 @@ public class ItemListRespDTO {
     /**
      * 商品列表
      */
-    private List<Map<String, Object>> items;
+    private List<ItemDTO> items;
 }

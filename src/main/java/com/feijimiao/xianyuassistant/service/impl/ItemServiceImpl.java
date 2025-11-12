@@ -25,6 +25,9 @@ public class ItemServiceImpl implements ItemService {
     
     @Autowired
     private com.feijimiao.xianyuassistant.service.AccountService accountService;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.GoodsInfoService goodsInfoService;
 
     @Override
     public ResultObject<ItemListRespDTO> getItemList(ItemListReqDTO reqDTO) {
@@ -138,6 +141,18 @@ public class ItemServiceImpl implements ItemService {
             if (respDTO.getSuccess()) {
                 log.info("获取商品列表成功: cookieId={}, 商品数量={}", 
                         reqDTO.getCookieId(), respDTO.getCurrentCount());
+                
+                // 保存商品信息到数据库
+                if (respDTO.getItems() != null && !respDTO.getItems().isEmpty()) {
+                    try {
+                        int savedCount = goodsInfoService.batchSaveOrUpdateGoodsInfo(respDTO.getItems());
+                        log.info("商品信息已保存到数据库: 成功数量={}", savedCount);
+                    } catch (Exception e) {
+                        log.error("保存商品信息到数据库失败", e);
+                        // 不影响主流程，继续返回结果
+                    }
+                }
+                
                 return ResultObject.success(respDTO);
             } else {
                 log.error("获取商品列表失败: success=false");
@@ -269,7 +284,9 @@ public class ItemServiceImpl implements ItemService {
                         for (Map<String, Object> card : cardList) {
                             Map<String, Object> cardData = (Map<String, Object>) card.get("cardData");
                             if (cardData != null) {
-                                respDTO.getItems().add(cardData);
+                                // 将 Map 转换为 ItemDTO
+                                ItemDTO itemDTO = objectMapper.convertValue(cardData, ItemDTO.class);
+                                respDTO.getItems().add(itemDTO);
                             }
                         }
                     }
