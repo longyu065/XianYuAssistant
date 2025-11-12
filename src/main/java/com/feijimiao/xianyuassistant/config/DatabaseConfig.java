@@ -33,6 +33,16 @@ public class DatabaseConfig {
         dataSource.setDriverClassName("org.sqlite.JDBC");
         dataSource.setUrl(databaseUrl);
         
+        // 打印数据库文件路径
+        String dbPath = databaseUrl.replace("jdbc:sqlite:", "");
+        File dbFile = new File(dbPath);
+        try {
+            log.info("数据库文件路径: {}", dbFile.getCanonicalPath());
+        } catch (Exception e) {
+            log.warn("获取数据库文件绝对路径失败: {}", e.getMessage());
+            log.info("数据库文件路径(相对路径): {}", dbPath);
+        }
+        
         // 初始化数据库表结构
         initDatabase(dataSource);
         

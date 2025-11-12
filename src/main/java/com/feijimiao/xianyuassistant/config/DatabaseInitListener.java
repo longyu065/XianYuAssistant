@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -23,6 +24,16 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
+        // 打印数据库文件路径
+        try (Connection conn = dataSource.getConnection()) {
+            String url = conn.getMetaData().getURL();
+            String dbPath = url.replace("jdbc:sqlite:", "");
+            File dbFile = new File(dbPath);
+            log.info("数据库文件路径: {}", dbFile.getCanonicalPath());
+        } catch (Exception e) {
+            log.warn("获取数据库文件路径失败: {}", e.getMessage());
+        }
+        
         log.info("=".repeat(60));
         log.info("数据库初始化完成，开始验证...");
         log.info("=".repeat(60));
