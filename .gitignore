@@ -32,3 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 /src/main/resources/pythondemo/xianyu-auto-reply-main/
+
+### Database ###
+/dbdata/
+*.db
+*.db-journal
+/logs/

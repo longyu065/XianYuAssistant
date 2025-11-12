@@ -15,6 +15,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -38,6 +39,9 @@ public class QRLoginServiceImpl implements QRLoginService {
     private final Map<String, QRLoginSession> sessions = new ConcurrentHashMap<>();
     private final OkHttpClient httpClient;
     private final Gson gson = new Gson();
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.AccountService accountService;
     
     private static final String HOST = "https://passport.goofish.com";
     private static final String API_MINI_LOGIN = HOST + "/mini_login.htm";
@@ -77,9 +81,12 @@ public class QRLoginServiceImpl implements QRLoginService {
 
     
     /**
-     * 获取m_h5_tk
+     * 获取_m_h5_tk token
+     * 这个token是闲鱼API调用必需的，用于签名验证
      */
     private void getMh5tk(QRLoginSession session) throws IOException {
+        log.info("开始获取_m_h5_tk token...");
+        
         Map<String, Object> data = new HashMap<>();
         data.put("bizScene", "home");
         String dataStr = gson.toJson(data);
@@ -95,19 +102,24 @@ public class QRLoginServiceImpl implements QRLoginService {
         
         try (Response response = httpClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
-                // 提取cookie
+                // 提取cookie（注意：Cookie名称是 _m_h5_tk，带下划线前缀）
                 List<String> cookieHeaders = response.headers("Set-Cookie");
                 for (String cookie : cookieHeaders) {
                     String[] parts = cookie.split(";")[0].split("=", 2);
                     if (parts.length == 2) {
                         session.getCookies().put(parts[0], parts[1]);
+                        log.debug("提取到Cookie: {} = {}", parts[0], parts[1].substring(0, Math.min(20, parts[1].length())));
                     }
                 }
                 
-                String mh5tk = session.getCookies().get("m_h5_tk");
+                // 获取 _m_h5_tk（注意下划线前缀）
+                String mh5tk = session.getCookies().get("_m_h5_tk");
                 String token = "";
                 if (mh5tk != null && mh5tk.contains("_")) {
                     token = mh5tk.split("_")[0];
+                    log.info("提取到_m_h5_tk token: {}", token.substring(0, Math.min(10, token.length())));
+                } else {
+                    log.warn("未找到_m_h5_tk，当前cookies: {}", session.getCookies().keySet());
                 }
                 
                 // 生成签名
@@ -128,7 +140,7 @@ public class QRLoginServiceImpl implements QRLoginService {
                         .addQueryParameter("data", dataStr)
                         .build();
                 
-                // 第二次请求
+                // 第二次请求，刷新token
                 Request request2 = new Request.Builder()
                         .url(url)
                         .headers(generateApiHeaders())
@@ -137,8 +149,23 @@ public class QRLoginServiceImpl implements QRLoginService {
                         .build();
                 
                 try (Response response2 = httpClient.newCall(request2).execute()) {
-                    log.info("获取m_h5_tk成功: {}", session.getSessionId());
+                    if (response2.isSuccessful()) {
+                        // 第二次请求可能会更新_m_h5_tk
+                        List<String> cookieHeaders2 = response2.headers("Set-Cookie");
+                        for (String cookie : cookieHeaders2) {
+                            String[] parts = cookie.split(";")[0].split("=", 2);
+                            if (parts.length == 2) {
+                                session.getCookies().put(parts[0], parts[1]);
+                            }
+                        }
+                        log.info("_m_h5_tk获取成功: sessionId={}, cookies包含: {}", 
+                                session.getSessionId(), session.getCookies().keySet());
+                    } else {
+                        log.warn("第二次请求失败，状态码: {}", response2.code());
+                    }
                 }
+            } else {
+                log.error("获取_m_h5_tk失败，状态码: {}", response.code());
             }
         }
     }
@@ -465,6 +492,11 @@ public class QRLoginServiceImpl implements QRLoginService {
                             } else {
                                 // 登录成功，保存Cookie
                                 session.setStatus("success");
+                                
+                                // 保存之前的 _m_h5_tk 和 _m_h5_tk_enc（如果存在）
+                                String existingMh5tk = session.getCookies().get("_m_h5_tk");
+                                String existingMh5tkEnc = session.getCookies().get("_m_h5_tk_enc");
+                                
                                 List<String> cookieHeaders = response.headers("Set-Cookie");
                                 for (String cookie : cookieHeaders) {
                                     String[] parts = cookie.split(";")[0].split("=", 2);
@@ -475,6 +507,18 @@ public class QRLoginServiceImpl implements QRLoginService {
                                         }
                                     }
                                 }
+                                
+                                // 恢复之前获取的 _m_h5_tk（如果响应中没有新的）
+                                if (existingMh5tk != null && !session.getCookies().containsKey("_m_h5_tk")) {
+                                    session.getCookies().put("_m_h5_tk", existingMh5tk);
+                                    log.info("恢复之前获取的_m_h5_tk: {}", existingMh5tk.substring(0, Math.min(20, existingMh5tk.length())));
+                                }
+                                if (existingMh5tkEnc != null && !session.getCookies().containsKey("_m_h5_tk_enc")) {
+                                    session.getCookies().put("_m_h5_tk_enc", existingMh5tkEnc);
+                                }
+                                
+                                // 保存Cookie到数据库
+                                saveCookieToDatabase(session);
                             }
                         }
                         
@@ -545,6 +589,48 @@ public class QRLoginServiceImpl implements QRLoginService {
             sessions.remove(sessionId);
             log.info("清理过期会话: {}", sessionId);
         });
+    }
+    
+    /**
+     * 保存Cookie到数据库
+     */
+    private void saveCookieToDatabase(QRLoginSession session) {
+        try {
+            String unb = session.getUnb();
+            if (unb == null || unb.isEmpty()) {
+                log.warn("UNB为空，无法保存Cookie: sessionId={}", session.getSessionId());
+                return;
+            }
+            
+            // 检查关键Cookie字段
+            Map<String, String> cookies = session.getCookies();
+            log.info("准备保存Cookie到数据库，当前Cookie包含字段: {}", cookies.keySet());
+            
+            // 提取 _m_h5_tk
+            String mH5Tk = cookies.get("_m_h5_tk");
+            if (mH5Tk == null || mH5Tk.isEmpty()) {
+                log.warn("警告：Cookie中缺少_m_h5_tk字段！这可能导致后续API调用失败");
+            } else {
+                log.info("_m_h5_tk已包含: {}", mH5Tk.substring(0, Math.min(20, mH5Tk.length())));
+            }
+            
+            // 格式化Cookie字符串
+            String cookieText = CookieUtils.formatCookies(cookies);
+            log.info("格式化后的Cookie长度: {}", cookieText.length());
+            
+            // 使用UNB作为账号备注（可以后续优化为用户自定义）
+            String accountNote = "账号_" + unb.substring(0, Math.min(8, unb.length()));
+            
+            // 保存到数据库（包含 m_h5_tk）
+            Long accountId = accountService.saveAccountAndCookie(accountNote, unb, cookieText, mH5Tk);
+            
+            log.info("Cookie已保存到数据库: sessionId={}, accountId={}, unb={}, Cookie字段数={}, m_h5_tk={}", 
+                    session.getSessionId(), accountId, unb, cookies.size(), 
+                    mH5Tk != null ? "已保存" : "未提供");
+            
+        } catch (Exception e) {
+            log.error("保存Cookie到数据库失败: sessionId={}", session.getSessionId(), e);
+        }
     }
     
     /**
