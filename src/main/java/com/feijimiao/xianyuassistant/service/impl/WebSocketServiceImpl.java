@@ -101,7 +101,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             log.info("accessToken获取成功: accountId={}, token长度={}", accountId, accessToken.length());
             
             // 调用通用连接方法
-            return connectWebSocket(accountId, cookieStr, deviceId, accessToken);
+            return connectWebSocket(accountId, cookieStr, deviceId, accessToken, unb);
 
         } catch (com.feijimiao.xianyuassistant.exception.CaptchaRequiredException e) {
             log.warn("启动WebSocket需要滑块验证: accountId={}, url={}", accountId, e.getCaptchaUrl());
@@ -158,7 +158,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             log.info("【账号{}】准备调用通用连接方法（Token将在注册成功后保存）...", accountId);
             
             // 调用通用连接方法
-            boolean result = connectWebSocket(accountId, cookieStr, deviceId, accessToken);
+            boolean result = connectWebSocket(accountId, cookieStr, deviceId, accessToken, unb);
             
             log.info("【账号{}】连接结果={}", accountId, result);
             log.info("========== 手动Token启动流程结束 ==========");
@@ -174,7 +174,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     /**
      * 通用WebSocket连接方法
      */
-    private boolean connectWebSocket(Long accountId, String cookieStr, String deviceId, String accessToken) throws Exception {
+    private boolean connectWebSocket(Long accountId, String cookieStr, String deviceId, String accessToken, String unb) throws Exception {
         try {
             // 构建WebSocket请求头（参考Python的WEBSOCKET_HEADERS配置）
             Map<String, String> headers = new HashMap<>();
@@ -192,6 +192,9 @@ public class WebSocketServiceImpl implements WebSocketService {
             // 创建WebSocket客户端（参考Python的_create_websocket_connection）
             URI serverUri = new URI(WEBSOCKET_URL);
             XianyuWebSocketClient client = new XianyuWebSocketClient(serverUri, headers, String.valueOf(accountId));
+            
+            // 设置当前用户ID（从Cookie的unb字段获取）
+            client.setMyUserId(unb);
             
             // 设置消息处理器
             client.setMessageHandler(messageHandler);
@@ -317,6 +320,33 @@ public class WebSocketServiceImpl implements WebSocketService {
         if (task != null) {
             task.cancel(false);
             log.info("心跳任务已停止: accountId={}", accountId);
+        }
+    }
+
+    @Override
+    public boolean sendMessage(Long accountId, String cid, String toId, String text) {
+        try {
+            log.info("发送消息: accountId={}, cid={}, toId={}, text={}", accountId, cid, toId, text);
+            
+            // 获取WebSocket客户端
+            XianyuWebSocketClient client = webSocketClients.get(accountId);
+            if (client == null) {
+                log.error("WebSocket客户端不存在: accountId={}", accountId);
+                return false;
+            }
+            
+            if (!client.isConnected()) {
+                log.error("WebSocket未连接: accountId={}", accountId);
+                return false;
+            }
+            
+            // 发送消息
+            client.sendMessage(cid, toId, text);
+            return true;
+            
+        } catch (Exception e) {
+            log.error("发送消息失败: accountId={}, cid={}, toId={}", accountId, cid, toId, e);
+            return false;
         }
     }
 

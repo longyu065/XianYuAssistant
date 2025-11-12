@@ -42,4 +42,15 @@ public interface WebSocketService {
      * 停止所有WebSocket连接
      */
     void stopAllWebSockets();
+    
+    /**
+     * 发送消息
+     *
+     * @param accountId 账号ID
+     * @param cid 会话ID（不带@goofish后缀）
+     * @param toId 接收方用户ID（不带@goofish后缀）
+     * @param text 消息文本内容
+     * @return 是否成功
+     */
+    boolean sendMessage(Long accountId, String cid, String toId, String text);
 }

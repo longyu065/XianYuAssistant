@@ -24,6 +24,9 @@ public class XianyuWebSocketClient extends WebSocketClient {
     private final String accountId;
     private boolean isConnected = false;
     
+    // 当前用户ID（从Cookie的unb字段获取）
+    private String myUserId = null;
+    
     // 消息处理并发控制（参考Python的_handle_message_with_semaphore）
     private final Semaphore messageSemaphore = new Semaphore(100); // 最多100个并发消息处理（参考Python）
     private final ExecutorService messageExecutor = Executors.newFixedThreadPool(10);
@@ -68,6 +71,13 @@ public class XianyuWebSocketClient extends WebSocketClient {
      */
     public void setOnRegistrationSuccess(Runnable callback) {
         this.onRegistrationSuccess = callback;
+    }
+    
+    /**
+     * 设置当前用户ID
+     */
+    public void setMyUserId(String userId) {
+        this.myUserId = userId;
     }
 
     @Override
@@ -450,5 +460,129 @@ public class XianyuWebSocketClient extends WebSocketClient {
      */
     public boolean isConnected() {
         return isConnected && !isClosed();
+    }
+    
+    /**
+     * 发送消息
+     * 参考Python的send_msg方法
+     * 
+     * @param cid 会话ID（不带@goofish后缀）
+     * @param toId 接收方用户ID（不带@goofish后缀）
+     * @param text 消息文本内容
+     */
+    public void sendMessage(String cid, String toId, String text) {
+        if (!isConnected) {
+            log.error("【账号{}】WebSocket未连接，无法发送消息", accountId);
+            return;
+        }
+        
+        try {
+            log.info("【账号{}】=== 开始发送消息 ===", accountId);
+            log.info("【账号{}】输入参数 - cid: {}, toId: {}, text: {}", accountId, cid, toId, text);
+            log.info("【账号{}】当前用户ID - myUserId: {}, accountId: {}", accountId, myUserId, accountId);
+            
+            // 构造消息内容
+            Map<String, Object> textContent = new HashMap<>();
+            textContent.put("contentType", 1);
+            Map<String, String> textData = new HashMap<>();
+            textData.put("text", text);
+            textContent.put("text", textData);
+            
+            // Base64编码消息内容
+            String textJson = objectMapper.writeValueAsString(textContent);
+            String textBase64 = java.util.Base64.getEncoder().encodeToString(textJson.getBytes("UTF-8"));
+            
+            log.info("【账号{}】消息内容JSON: {}", accountId, textJson);
+            log.info("【账号{}】Base64编码: {}", accountId, textBase64);
+            
+            // 构造消息体
+            Map<String, Object> messageBody = new HashMap<>();
+            messageBody.put("uuid", generateUuid());
+            messageBody.put("cid", cid + "@goofish");
+            messageBody.put("conversationType", 1);
+            
+            // 消息内容
+            Map<String, Object> content = new HashMap<>();
+            content.put("contentType", 101);
+            Map<String, Object> custom = new HashMap<>();
+            custom.put("type", 1);
+            custom.put("data", textBase64);
+            content.put("custom", custom);
+            messageBody.put("content", content);
+            
+            messageBody.put("redPointPolicy", 0);
+            
+            // 扩展信息
+            Map<String, String> extension = new HashMap<>();
+            extension.put("extJson", "{}");
+            messageBody.put("extension", extension);
+            
+            // 上下文信息
+            Map<String, String> ctx = new HashMap<>();
+            ctx.put("appVersion", "1.0");
+            ctx.put("platform", "web");
+            messageBody.put("ctx", ctx);
+            
+            messageBody.put("mtags", new HashMap<>());
+            messageBody.put("msgReadStatusSetting", 1);
+            
+            // 接收者列表（参考Python: actualReceivers包含接收方和发送方）
+            Map<String, Object> receivers = new HashMap<>();
+            java.util.List<String> actualReceivers = new java.util.ArrayList<>();
+            actualReceivers.add(toId + "@goofish");
+            // 使用myUserId而不是accountId
+            String senderUserId = myUserId != null ? myUserId : accountId;
+            actualReceivers.add(senderUserId + "@goofish");
+            receivers.put("actualReceivers", actualReceivers);
+            
+            log.info("【账号{}】实际发送者ID: {}", accountId, senderUserId);
+            log.info("【账号{}】actualReceivers: {}", accountId, actualReceivers);
+            
+            // 构造完整消息
+            Map<String, Object> message = new HashMap<>();
+            message.put("lwp", "/r/MessageSend/sendByReceiverScope");
+            
+            Map<String, String> headers = new HashMap<>();
+            headers.put("mid", generateMid());
+            message.put("headers", headers);
+            
+            java.util.List<Object> body = new java.util.ArrayList<>();
+            body.add(messageBody);
+            body.add(receivers);
+            message.put("body", body);
+            
+            // 发送消息
+            String messageJson = objectMapper.writeValueAsString(message);
+            log.info("【账号{}】完整消息JSON: {}", accountId, messageJson);
+            
+            send(messageJson);
+            log.info("【账号{}】✅ 消息已发送到WebSocket: cid={}, toId={}, text={}", accountId, cid, toId, text);
+            log.info("【账号{}】=== 发送消息完成 ===", accountId);
+            
+        } catch (Exception e) {
+            log.error("【账号{}】发送消息失败: cid={}, toId={}", accountId, cid, toId, e);
+        }
+    }
+    
+    /**
+     * 生成消息ID (mid)
+     * 格式: 随机数(0-999) + 时间戳(毫秒) + " 0"
+     * 参考Python的generate_mid方法
+     */
+    private String generateMid() {
+        int randomPart = (int) (Math.random() * 1000);
+        long timestamp = System.currentTimeMillis();
+        return randomPart + String.valueOf(timestamp) + " 0";
+    }
+    
+    /**
+     * 生成UUID
+     * 格式: 负数时间戳（去掉最后两位）
+     * 参考Python的generate_uuid方法
+     */
+    private String generateUuid() {
+        long timestamp = System.currentTimeMillis();
+        long uuid = -(timestamp / 100);
+        return String.valueOf(uuid);
     }
 }

@@ -92,6 +92,54 @@ public class WebSocketController {
     }
 
     /**
+     * 发送消息
+     */
+    @PostMapping("/sendMessage")
+    public ResultObject<String> sendMessage(@RequestBody SendMessageReqDTO reqDTO) {
+        try {
+            log.info("发送消息请求: xianyuAccountId={}, cid={}, toId={}, text={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getCid(), reqDTO.getToId(), reqDTO.getText());
+            
+            // 参数校验
+            if (reqDTO.getXianyuAccountId() == null) {
+                return ResultObject.failed("账号ID不能为空");
+            }
+            if (reqDTO.getCid() == null || reqDTO.getCid().isEmpty()) {
+                return ResultObject.failed("会话ID(cid)不能为空");
+            }
+            if (reqDTO.getToId() == null || reqDTO.getToId().isEmpty()) {
+                return ResultObject.failed("接收方ID(toId)不能为空");
+            }
+            if (reqDTO.getText() == null || reqDTO.getText().isEmpty()) {
+                return ResultObject.failed("消息内容不能为空");
+            }
+            
+            // 检查WebSocket连接状态
+            if (!webSocketService.isConnected(reqDTO.getXianyuAccountId())) {
+                return ResultObject.failed("WebSocket未连接，请先启动连接");
+            }
+            
+            // 发送消息
+            boolean success = webSocketService.sendMessage(
+                    reqDTO.getXianyuAccountId(),
+                    reqDTO.getCid(),
+                    reqDTO.getToId(),
+                    reqDTO.getText()
+            );
+            
+            if (success) {
+                return ResultObject.success("消息发送成功");
+            } else {
+                return ResultObject.failed("消息发送失败");
+            }
+            
+        } catch (Exception e) {
+            log.error("发送消息失败", e);
+            return ResultObject.failed("发送消息失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 检查WebSocket连接状态
      */
     @PostMapping("/status")
@@ -145,5 +193,16 @@ public class WebSocketController {
         private Boolean needCaptcha;
         private String captchaUrl;
         private String message;
+    }
+    
+    /**
+     * 发送消息请求DTO
+     */
+    @Data
+    public static class SendMessageReqDTO {
+        private Long xianyuAccountId;  // 账号ID
+        private String cid;             // 会话ID（不带@goofish后缀）
+        private String toId;            // 接收方用户ID（不带@goofish后缀）
+        private String text;            // 消息文本内容
     }
 }
