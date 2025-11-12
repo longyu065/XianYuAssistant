@@ -1,0 +1,454 @@
+package com.feijimiao.xianyuassistant.websocket;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * 闲鱼WebSocket客户端
+ * 用于监听闲鱼消息
+ * 参考Python代码的WebSocketClient和消息处理机制
+ */
+@Slf4j
+public class XianyuWebSocketClient extends WebSocketClient {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String accountId;
+    private boolean isConnected = false;
+    
+    // 消息处理并发控制（参考Python的_handle_message_with_semaphore）
+    private final Semaphore messageSemaphore = new Semaphore(100); // 最多100个并发消息处理（参考Python）
+    private final ExecutorService messageExecutor = Executors.newFixedThreadPool(10);
+    
+    // 消息处理器
+    private WebSocketMessageHandler messageHandler;
+    
+    // 聊天消息服务
+    private com.feijimiao.xianyuassistant.service.ChatMessageService chatMessageService;
+    
+    // 消息统计
+    private long messageCount = 0;
+    private long lastMessageTime = 0;
+    
+    // 会话信息
+    private String sessionId = null;  // 保存注册后的sid
+    
+    // 注册成功回调
+    private Runnable onRegistrationSuccess;
+
+    public XianyuWebSocketClient(URI serverUri, Map<String, String> headers, String accountId) {
+        super(serverUri, headers);
+        this.accountId = accountId;
+    }
+    
+    /**
+     * 设置消息处理器
+     */
+    public void setMessageHandler(WebSocketMessageHandler handler) {
+        this.messageHandler = handler;
+    }
+    
+    /**
+     * 设置聊天消息服务
+     */
+    public void setChatMessageService(com.feijimiao.xianyuassistant.service.ChatMessageService service) {
+        this.chatMessageService = service;
+    }
+    
+    /**
+     * 设置注册成功回调
+     */
+    public void setOnRegistrationSuccess(Runnable callback) {
+        this.onRegistrationSuccess = callback;
+    }
+
+    @Override
+    public void onOpen(ServerHandshake handshakedata) {
+        isConnected = true;
+        log.info("【账号{}】==================== WebSocket连接建立成功 ====================", accountId);
+        log.info("【账号{}】服务器握手状态: {}", accountId, handshakedata.getHttpStatus());
+        log.info("【账号{}】服务器握手消息: {}", accountId, handshakedata.getHttpStatusMessage());
+        log.info("【账号{}】连接已就绪，等待初始化和接收消息...", accountId);
+        log.info("【账号{}】WebSocket连接状态正常，等待服务器消息...", accountId);
+        log.info("【账号{}】准备进入消息接收循环...", accountId);
+        log.info("【账号{}】================================================================", accountId);
+    }
+
+    @Override
+    public void onMessage(String message) {
+        // 使用信号量控制并发处理（参考Python的_handle_message_with_semaphore）
+        messageExecutor.submit(() -> handleMessageWithSemaphore(message));
+    }
+    
+    /**
+     * 带信号量的消息处理包装器
+     * 参考Python的_handle_message_with_semaphore方法
+     */
+    private void handleMessageWithSemaphore(String message) {
+        try {
+            // 获取信号量许可
+            messageSemaphore.acquire();
+            
+            try {
+                // 实际处理消息
+                handleMessage(message);
+            } catch (Exception e) {
+                // 确保即使处理失败也记录错误
+                log.error("【账号{}】消息处理异常", accountId, e);
+            } finally {
+                // 释放信号量许可
+                messageSemaphore.release();
+            }
+            
+        } catch (InterruptedException e) {
+            log.error("【账号{}】消息处理被中断", accountId, e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("【账号{}】信号量处理异常", accountId, e);
+        }
+    }
+    
+    /**
+     * 消息处理核心逻辑
+     * 参考Python的handle_message方法
+     */
+    private void handleMessage(String message) {
+        try {
+            messageCount++;
+            lastMessageTime = System.currentTimeMillis();
+            
+            if (message == null || message.isEmpty()) {
+                log.warn("【账号{}】收到空消息", accountId);
+                return;
+            }
+
+            // 尝试解析JSON
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> messageData = objectMapper.readValue(message, Map.class);
+                
+                // 识别消息类型
+                Object lwpType = messageData.get("lwp");
+                Object codeType = messageData.get("code");
+                String msgType = "未知";
+                if (lwpType != null) {
+                    msgType = lwpType.toString();
+                } else if (codeType != null) {
+                    msgType = "响应(code=" + codeType + ")";
+                }
+                
+                // 输出消息类型和完整内容
+                log.info("【账号{}】消息#{} [{}]: {}", accountId, messageCount, msgType, message);
+                
+                // 检查消息类型和解密（参考Python的handle_message）
+                Object lwp = messageData.get("lwp");
+                
+                // 处理同步包消息 /s/para 和 /s/sync（用户消息）
+                if (("/s/para".equals(lwp) || "/s/sync".equals(lwp)) && messageData.containsKey("body")) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> body = (Map<String, Object>) messageData.get("body");
+                        
+                        if (body != null && body.containsKey("syncPushPackage")) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> syncPushPackage = (Map<String, Object>) body.get("syncPushPackage");
+                            
+                            if (syncPushPackage != null && syncPushPackage.containsKey("data")) {
+                                @SuppressWarnings("unchecked")
+                                java.util.List<Object> dataList = (java.util.List<Object>) syncPushPackage.get("data");
+                                
+                                if (dataList != null && !dataList.isEmpty()) {
+                                    // 处理所有 data 项（可能有多条消息）
+                                    for (int i = 0; i < dataList.size(); i++) {
+                                        @SuppressWarnings("unchecked")
+                                        Map<String, Object> syncData = (Map<String, Object>) dataList.get(i);
+                                        
+                                        if (syncData != null && syncData.containsKey("data")) {
+                                            String encryptedData = syncData.get("data").toString();
+                                            
+                                            // 解密数据
+                                            String decryptedData = com.feijimiao.xianyuassistant.utils.MessageDecryptUtils.decrypt(encryptedData);
+                                            
+                                            if (decryptedData != null) {
+                                                // 判断消息方向
+                                                String direction = determineMessageDirection(decryptedData, accountId);
+                                                log.info("【账号{}】{} 解密成功 [{}] 第{}条: {}", accountId, direction, lwp, i + 1, decryptedData);
+                                                // 将解密后的数据放回
+                                                syncData.put("decryptedData", decryptedData);
+                                                
+                                                // 保存到数据库（静默处理，失败不影响消息流程）
+                                                if (chatMessageService != null) {
+                                                    try {
+                                                        Long accountIdLong = Long.parseLong(accountId);
+                                                        chatMessageService.saveChatMessage(accountIdLong, decryptedData);
+                                                    } catch (Exception e) {
+                                                        // 静默跳过，不记录错误日志
+                                                        log.debug("【账号{}】保存聊天消息异常: {}", accountId, e.getMessage());
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("【账号{}】解密同步包消息失败: {}", accountId, e.getMessage());
+                    }
+                }
+                
+                // 通用body解密（兼容其他消息类型）
+                if (messageData.containsKey("body")) {
+                    Object body = messageData.get("body");
+                    if (body instanceof String) {
+                        String bodyStr = (String) body;
+                        String decryptedBody = com.feijimiao.xianyuassistant.utils.MessageDecryptUtils.tryDecrypt(bodyStr);
+                        if (decryptedBody != null && !decryptedBody.equals(bodyStr)) {
+                            log.info("【账号{}】解密body: {}", accountId, decryptedBody);
+                            messageData.put("decryptedBody", decryptedBody);
+                        }
+                    }
+                }
+
+                // 检查消息类型
+                Object type = messageData.get("type");
+                if (type != null) {
+                    log.info("【账号{}】消息类型: {}", accountId, type);
+                }
+
+                // 发送ACK确认消息（参考Python的handle_message方法）
+                sendAckMessage(messageData);
+                
+                // 检查是否是心跳响应（参考Python的handle_heartbeat_response）
+                // Python中心跳响应的判断是 code == 200
+                Object code = messageData.get("code");
+                if (code != null && (code.equals(200) || "200".equals(code.toString()))) {
+                    handleHeartbeatResponse();
+                    // 心跳响应也要继续处理，不要return
+                    log.debug("【账号{}】收到心跳响应", accountId);
+                }
+
+                // 检查是否是注册响应，保存sid
+                if (code != null && (code.equals(200) || "200".equals(code.toString()))) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> headers = (Map<String, Object>) messageData.get("headers");
+                    if (headers != null && headers.containsKey("sid")) {
+                        sessionId = headers.get("sid").toString();
+                        log.info("【账号{}】已保存会话ID: {}", accountId, sessionId);
+                    }
+                    if (headers != null && headers.containsKey("reg-sid")) {
+                        log.info("【账号{}】✅ 注册成功，reg-sid: {}", accountId, headers.get("reg-sid"));
+                        
+                        // 触发注册成功回调（保存Token）
+                        if (onRegistrationSuccess != null) {
+                            try {
+                                log.info("【账号{}】触发注册成功回调，准备保存Token...", accountId);
+                                onRegistrationSuccess.run();
+                            } catch (Exception e) {
+                                log.error("【账号{}】注册成功回调执行失败", accountId, e);
+                            }
+                        }
+                    }
+                }
+                
+                // 调用消息处理器
+                if (messageHandler != null) {
+                    messageHandler.handleMessage(accountId, messageData);
+                }
+
+            } catch (Exception e) {
+                log.warn("【账号{}】消息解析失败: {}", accountId, e.getMessage());
+            }
+
+        } catch (Exception e) {
+            log.error("【账号{}】消息处理失败", accountId, e);
+            if (messageHandler != null) {
+                messageHandler.handleError(accountId, e);
+            }
+        }
+    }
+    
+    /**
+     * 判断消息方向（发送还是接收）
+     * 
+     * @param decryptedData 解密后的JSON数据
+     * @param accountId 当前账号ID
+     * @return "【发】" 或 "【收】"
+     */
+    private String determineMessageDirection(String decryptedData, String accountId) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = objectMapper.readValue(decryptedData, Map.class);
+            
+            // 检查是否是已读回执（字段2=2）
+            Object type = data.get("2");
+            if (type != null && "2".equals(type.toString())) {
+                return "【读】"; // 已读回执
+            }
+            
+            // 检查是否是聊天消息（有字段1且是Map）
+            Object field1 = data.get("1");
+            if (field1 instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> messageInfo = (Map<String, Object>) field1;
+                
+                // 获取发送者（字段1.1.1）
+                Object senderObj = messageInfo.get("1");
+                if (senderObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> senderInfo = (Map<String, Object>) senderObj;
+                    String sender = (String) senderInfo.get("1");
+                    
+                    // 获取接收者（字段1.2）
+                    String receiver = (String) messageInfo.get("2");
+                    
+                    // 判断方向：如果接收者包含当前账号ID，说明是收到的消息
+                    if (receiver != null && receiver.contains(accountId)) {
+                        return "【收】";
+                    } else if (sender != null && sender.contains(accountId)) {
+                        return "【发】";
+                    }
+                }
+            }
+            
+            return "【?】"; // 未知类型
+            
+        } catch (Exception e) {
+            return "【?】";
+        }
+    }
+    
+    /**
+     * 发送ACK确认消息
+     * 参考Python的handle_message方法中的ACK发送逻辑
+     * 
+     * @param messageData 收到的消息数据
+     */
+    private void sendAckMessage(Map<String, Object> messageData) {
+        try {
+            // 检查消息是否包含headers
+            if (!messageData.containsKey("headers")) {
+                return;
+            }
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> headers = (Map<String, Object>) messageData.get("headers");
+            
+            // 构建ACK消息
+            Map<String, Object> ack = new HashMap<>();
+            ack.put("code", 200);
+            
+            Map<String, Object> ackHeaders = new HashMap<>();
+            // 复制mid
+            if (headers.containsKey("mid")) {
+                ackHeaders.put("mid", headers.get("mid"));
+            } else {
+                // 生成mid: 随机数(0-999) + 时间戳(毫秒) + " 0"
+                int randomPart = (int) (Math.random() * 1000);
+                long timestamp = System.currentTimeMillis();
+                String mid = randomPart + String.valueOf(timestamp) + " 0";
+                ackHeaders.put("mid", mid);
+            }
+            
+            // 复制sid
+            if (headers.containsKey("sid")) {
+                ackHeaders.put("sid", headers.get("sid"));
+            } else {
+                ackHeaders.put("sid", "");
+            }
+            
+            // 复制其他可选字段
+            if (headers.containsKey("app-key")) {
+                ackHeaders.put("app-key", headers.get("app-key"));
+            }
+            if (headers.containsKey("ua")) {
+                ackHeaders.put("ua", headers.get("ua"));
+            }
+            if (headers.containsKey("dt")) {
+                ackHeaders.put("dt", headers.get("dt"));
+            }
+            
+            ack.put("headers", ackHeaders);
+            
+            // 发送ACK
+            String ackJson = objectMapper.writeValueAsString(ack);
+            send(ackJson);
+            log.debug("【账号{}】已发送ACK确认: {}", accountId, ackJson);
+            
+        } catch (Exception e) {
+            log.debug("【账号{}】发送ACK失败: {}", accountId, e.getMessage());
+            // ACK发送失败不影响消息处理，只记录日志
+        }
+    }
+    
+    /**
+     * 处理心跳响应
+     * 参考Python的handle_heartbeat_response方法
+     */
+    private void handleHeartbeatResponse() {
+        log.debug("【账号{}】收到心跳响应", accountId);
+        if (messageHandler != null) {
+            messageHandler.handleHeartbeat(accountId);
+        }
+    }
+
+
+
+    @Override
+    public void onClose(int code, String reason, boolean remote) {
+        isConnected = false;
+        String closeType = remote ? "服务器" : "客户端";
+        log.info("【账号{}】WebSocket连接关闭 - 关闭方: {}, 代码: {}, 原因: {}", 
+                accountId, closeType, code, reason);
+        
+        // 关闭消息处理线程池
+        if (messageExecutor != null && !messageExecutor.isShutdown()) {
+            messageExecutor.shutdown();
+            log.debug("【账号{}】消息处理线程池已关闭", accountId);
+        }
+    }
+
+    @Override
+    public void onError(Exception ex) {
+        log.error("【账号{}】WebSocket发生错误", accountId, ex);
+        if (messageHandler != null) {
+            messageHandler.handleError(accountId, ex);
+        }
+    }
+
+    /**
+     * 发送心跳消息
+     * 参考Python的send_heartbeat方法
+     */
+    public void sendHeartbeat() {
+        if (isConnected) {
+            try {
+                // 生成心跳消息（参考Python格式）
+                // mid格式: 随机数(0-999) + 时间戳(毫秒) + " 0"
+                int randomPart = (int) (Math.random() * 1000);
+                long timestamp = System.currentTimeMillis();
+                String mid = randomPart + String.valueOf(timestamp) + " 0";
+                String heartbeat = String.format("{\"lwp\":\"/!\",\"headers\":{\"mid\":\"%s\"}}", mid);
+                send(heartbeat);
+                log.debug("【账号{}】发送心跳消息: {}", accountId, heartbeat);
+            } catch (Exception e) {
+                log.error("【账号{}】发送心跳失败", accountId, e);
+            }
+        }
+    }
+
+    /**
+     * 检查连接状态
+     */
+    public boolean isConnected() {
+        return isConnected && !isClosed();
+    }
+}

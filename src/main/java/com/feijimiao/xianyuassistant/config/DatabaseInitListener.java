@@ -133,6 +133,34 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
         
+        // 闲鱼聊天消息表
+        requiredTables.put("xianyu_chat_message",
+            "CREATE TABLE xianyu_chat_message (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "session_id VARCHAR(100), " +
+            "message_id VARCHAR(100) NOT NULL, " +
+            "message_type INTEGER DEFAULT 1, " +
+            "direction TINYINT NOT NULL, " +
+            "sender_user_id VARCHAR(100), " +
+            "sender_nickname VARCHAR(200), " +
+            "receiver_user_id VARCHAR(100), " +
+            "receiver_nickname VARCHAR(200), " +
+            "content_type INTEGER DEFAULT 1, " +
+            "content_text TEXT, " +
+            "content_json TEXT, " +
+            "item_id VARCHAR(100), " +
+            "item_title VARCHAR(500), " +
+            "is_read TINYINT DEFAULT 0, " +
+            "read_time DATETIME, " +
+            "raw_data TEXT, " +
+            "extra_info TEXT, " +
+            "message_time BIGINT, " +
+            "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
         // 检查并创建缺失的表
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredTables.entrySet()) {
@@ -236,6 +264,28 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         requiredIndexes.put("idx_goods_account_id",
             "CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods_info(xianyu_account_id)");
         
+        // 聊天消息表索引
+        requiredIndexes.put("idx_chat_message_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_account_id ON xianyu_chat_message(xianyu_account_id)");
+        requiredIndexes.put("idx_chat_message_session_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON xianyu_chat_message(session_id)");
+        requiredIndexes.put("idx_chat_message_message_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_message_id ON xianyu_chat_message(message_id)");
+        requiredIndexes.put("idx_chat_message_direction",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_direction ON xianyu_chat_message(direction)");
+        requiredIndexes.put("idx_chat_message_time",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_time ON xianyu_chat_message(message_time)");
+        requiredIndexes.put("idx_chat_message_sender",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_sender ON xianyu_chat_message(sender_user_id)");
+        requiredIndexes.put("idx_chat_message_receiver",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_receiver ON xianyu_chat_message(receiver_user_id)");
+        requiredIndexes.put("idx_chat_message_item_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_item_id ON xianyu_chat_message(item_id)");
+        requiredIndexes.put("idx_chat_message_is_read",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_is_read ON xianyu_chat_message(is_read)");
+        requiredIndexes.put("idx_chat_message_unique",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_message_unique ON xianyu_chat_message(xianyu_account_id, message_id)");
+        
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {
             String indexName = entry.getKey();
@@ -292,6 +342,12 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "AFTER UPDATE ON xianyu_goods_info " +
             "BEGIN " +
             "UPDATE xianyu_goods_info SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_chat_message_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_chat_message_time " +
+            "AFTER UPDATE ON xianyu_chat_message " +
+            "BEGIN " +
+            "UPDATE xianyu_chat_message SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
             "END");
         
         int createdCount = 0;

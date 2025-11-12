@@ -54,4 +54,14 @@ public class XianyuCookie {
      * 更新时间（SQLite存储为TEXT）
      */
     private String updatedTime;
+    
+    /**
+     * WebSocket accessToken
+     */
+    private String websocketToken;
+    
+    /**
+     * Token过期时间戳（毫秒）
+     */
+    private Long tokenExpireTime;
 }
