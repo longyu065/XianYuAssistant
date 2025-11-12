@@ -93,19 +93,19 @@
 }
 ```
 
-### 3. 从数据库获取商品
+### 3. 从数据库获取商品列表
 
-**接口地址：** `POST /api/items/db`
+**接口地址：** `POST /api/items/list`
 
 **请求体：**
 ```json
 {
-  "cookieId": "default"
+  "status": 0
 }
 ```
 
 **请求参数说明：**
-- `cookieId` (必填): 账号ID
+- `status` (必填): 商品状态（0=在售, 1=已下架, 2=已售出）
 
 **响应示例：**
 ```json
@@ -113,21 +113,68 @@
   "code": 200,
   "msg": "操作成功",
   "data": {
-    "success": true,
-    "count": 45,
+    "totalCount": 45,
     "items": [
       {
-        "item_id": "123456789",
-        "item_title": "商品标题",
-        "item_price": "¥99.00",
-        "item_category": "50025969",
-        "item_description": "",
-        "item_detail": "{...}"
+        "id": 123456789,
+        "xyGoodId": "123456789",
+        "title": "商品标题",
+        "coverPic": "//gw.alicdn.com/...",
+        "infoPic": "[...]",
+        "detailInfo": null,
+        "soldPrice": "99.00",
+        "status": 0,
+        "createdTime": "2024-11-12 10:00:00",
+        "updatedTime": "2024-11-12 10:00:00"
       }
     ]
   }
 }
 ```
+
+### 4. 获取商品详情（含详情信息填充）
+
+**接口地址：** `POST /api/items/detail`
+
+**请求体：**
+```json
+{
+  "xyGoodId": "123456789",
+  "cookieId": "default"
+}
+```
+
+**请求参数说明：**
+- `xyGoodId` (必填): 闲鱼商品ID
+- `cookieId` (可选): Cookie ID（账号ID、账号备注或UNB）。如果提供，会调用API获取并更新商品详情
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "item": {
+      "id": 123456789,
+      "xyGoodId": "123456789",
+      "title": "商品标题",
+      "coverPic": "//gw.alicdn.com/...",
+      "infoPic": "[...]",
+      "detailInfo": "{\"itemId\":\"123456789\",\"title\":\"商品标题\",\"description\":\"商品描述\",\"images\":[...]}",
+      "soldPrice": "99.00",
+      "status": 0,
+      "createdTime": "2024-11-12 10:00:00",
+      "updatedTime": "2024-11-12 10:00:00"
+    }
+  }
+}
+```
+
+**功能说明：**
+- 如果不提供 `cookieId`，只返回数据库中已有的商品信息
+- 如果提供 `cookieId`，会调用闲鱼API `mtop.taobao.idle.pc.detail` 获取最新的商品详情，并更新到数据库的 `detail_info` 字段
+- 这样可以避免在刷新商品列表时频繁请求详情接口，防止被风控
+- 只在需要查看详情时才调用详情接口
 
 ## 使用方式
 
@@ -146,20 +193,25 @@
 
 **curl示例：**
 ```bash
-# 获取第1页商品
-curl -X POST "http://localhost:8080/api/items/list" \
-  -H "Content-Type: application/json" \
-  -d '{"cookieId":"default","pageNumber":1,"pageSize":20}'
-
-# 获取所有商品
-curl -X POST "http://localhost:8080/api/items/all" \
+# 刷新商品数据（从闲鱼API获取并保存到数据库）
+curl -X POST "http://localhost:8080/api/items/refresh" \
   -H "Content-Type: application/json" \
   -d '{"cookieId":"default","pageSize":20,"maxPages":5}'
 
-# 从数据库获取
-curl -X POST "http://localhost:8080/api/items/db" \
+# 从数据库获取商品列表
+curl -X POST "http://localhost:8080/api/items/list" \
   -H "Content-Type: application/json" \
-  -d '{"cookieId":"default"}'
+  -d '{"status":0}'
+
+# 获取商品详情（不更新详情信息）
+curl -X POST "http://localhost:8080/api/items/detail" \
+  -H "Content-Type: application/json" \
+  -d '{"xyGoodId":"123456789"}'
+
+# 获取商品详情（同时更新详情信息）
+curl -X POST "http://localhost:8080/api/items/detail" \
+  -H "Content-Type: application/json" \
+  -d '{"xyGoodId":"123456789","cookieId":"default"}'
 ```
 
 ## 实现原理
@@ -180,49 +232,73 @@ HttpClientUtils (HTTP客户端)
 
 ### 核心功能
 
-1. **getItemList()** - Java方法
+1. **refreshItems()** - 刷新商品数据
    - 从数据库获取Cookie
    - 生成签名和时间戳
-   - 调用闲鱼API获取指定页的商品列表
-   - 解析商品信息并返回
+   - 调用闲鱼API `mtop.idle.web.xyh.item.list` 获取商品列表
+   - 自动分页获取所有商品
+   - 保存商品基本信息到数据库（不包含详情）
 
-2. **getAllItems()** - Java方法
-   - 自动分页循环调用getItemList()
-   - 直到获取所有商品或达到最大页数限制
-   - 返回所有商品的汇总信息
+2. **getItemsFromDb()** - 从数据库获取商品列表
+   - 根据商品状态查询数据库
+   - 返回已保存的商品列表
 
-3. **XianyuSignUtils** - 签名工具类
+3. **getItemDetail()** - 获取商品详情
+   - 从数据库获取商品基本信息
+   - 如果提供cookieId，调用闲鱼API `mtop.taobao.idle.pc.detail` 获取详情
+   - 更新数据库中的 `detail_info` 字段
+   - 返回完整的商品信息
+
+4. **XianyuApiUtils** - API调用工具类
+   - 统一封装闲鱼API调用逻辑
+   - 自动处理签名、时间戳、请求头等
+   - 提供响应解析和错误处理
+
+5. **XianyuSignUtils** - 签名工具类
    - Cookie解析
    - Token提取
    - MD5签名生成
 
 ## 数据库表结构
 
-商品信息保存在 `item_info` 表中：
+商品信息保存在 `xianyu_goods_info` 表中：
 
 ```sql
-CREATE TABLE item_info (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cookie_id TEXT NOT NULL,
-    item_id TEXT NOT NULL,
-    item_title TEXT,
-    item_description TEXT,
-    item_category TEXT,
-    item_price TEXT,
-    item_detail TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(cookie_id, item_id)
+CREATE TABLE IF NOT EXISTS xianyu_goods_info (
+    id BIGINT PRIMARY KEY,                        -- 表ID（使用雪花ID）
+    xy_good_id VARCHAR(100) NOT NULL,             -- 闲鱼商品ID
+    title VARCHAR(500),                           -- 商品标题
+    cover_pic TEXT,                               -- 封面图片URL
+    info_pic TEXT,                                -- 商品详情图片（JSON数组）
+    detail_info TEXT,                             -- 商品详情信息（通过detail接口填充）
+    detail_url TEXT,                              -- 商品详情页URL
+    sold_price VARCHAR(50),                       -- 商品价格
+    status TINYINT DEFAULT 0,                     -- 商品状态 0:在售 1:已下架 2:已售出
+    created_time DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP   -- 更新时间
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id);
+CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status);
 ```
+
+**字段说明：**
+- `detail_info`: 商品详情信息，初始为空，只有在调用 `/api/items/detail` 接口并提供 `cookieId` 时才会填充
+- `detail_url`: 商品详情页URL，在刷新商品列表时自动保存，可用于直接访问商品详情页
+- 这样设计可以避免在刷新商品列表时频繁请求详情接口，防止被风控
 
 ## 注意事项
 
 1. **Cookie有效性**：确保账号的Cookie是有效的，否则无法获取商品信息
-2. **请求频率**：获取所有商品时会自动添加延迟（1秒），避免请求过快
+2. **请求频率**：刷新商品列表时会自动添加延迟（1秒），避免请求过快
 3. **签名算法**：使用MD5生成签名，需要正确的Token和时间戳
-4. **数据保存**：商品信息会自动保存到数据库，避免重复获取
-5. **纯Java实现**：无需安装Python环境，所有逻辑都在Java中完成
+4. **数据保存**：商品基本信息会在刷新时自动保存到数据库
+5. **详情获取策略**：
+   - 刷新商品列表时不获取详情，只保存基本信息（标题、价格、图片等）
+   - 只有在调用 `/api/items/detail` 接口并提供 `cookieId` 时才获取详情
+   - 这样可以避免请求过快被风控
+   - 详情信息会缓存在数据库的 `detail_info` 字段中
+6. **纯Java实现**：无需安装Python环境，所有逻辑都在Java中完成
 
 ## 错误处理
 
@@ -262,3 +338,5 @@ xianyu.api.timeout=20000
 ## 更新日志
 
 - 2024-11-12: 初始版本，纯Java实现商品获取功能
+- 2024-11-12: 新增商品详情获取功能，支持按需获取详情，避免风控
+- 2024-11-12: 新增 `detail_url` 字段，在刷新商品列表时自动保存商品详情页URL

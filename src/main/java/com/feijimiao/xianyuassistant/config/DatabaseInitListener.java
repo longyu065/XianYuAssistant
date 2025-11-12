@@ -120,14 +120,17 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE TABLE xianyu_goods_info (" +
             "id BIGINT PRIMARY KEY, " +
             "xy_good_id VARCHAR(100) NOT NULL, " +
+            "xianyu_account_id BIGINT, " +
             "title VARCHAR(500), " +
             "cover_pic TEXT, " +
             "info_pic TEXT, " +
             "detail_info TEXT, " +
+            "detail_url TEXT, " +
             "sold_price VARCHAR(50), " +
             "status TINYINT DEFAULT 0, " +
             "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP" +
+            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
         
         // 检查并创建缺失的表
@@ -163,6 +166,12 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         List<ColumnDef> cookieColumns = new ArrayList<>();
         cookieColumns.add(new ColumnDef("m_h5_tk", "VARCHAR(500)", "ALTER TABLE xianyu_cookie ADD COLUMN m_h5_tk VARCHAR(500)"));
         tableColumns.put("xianyu_cookie", cookieColumns);
+        
+        // xianyu_goods_info 表需要的字段
+        List<ColumnDef> goodsColumns = new ArrayList<>();
+        goodsColumns.add(new ColumnDef("detail_url", "TEXT", "ALTER TABLE xianyu_goods_info ADD COLUMN detail_url TEXT"));
+        goodsColumns.add(new ColumnDef("xianyu_account_id", "BIGINT", "ALTER TABLE xianyu_goods_info ADD COLUMN xianyu_account_id BIGINT"));
+        tableColumns.put("xianyu_goods_info", goodsColumns);
         
         int addedCount = 0;
         for (Map.Entry<String, List<ColumnDef>> entry : tableColumns.entrySet()) {
@@ -224,6 +233,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id)");
         requiredIndexes.put("idx_goods_status",
             "CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status)");
+        requiredIndexes.put("idx_goods_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods_info(xianyu_account_id)");
         
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {

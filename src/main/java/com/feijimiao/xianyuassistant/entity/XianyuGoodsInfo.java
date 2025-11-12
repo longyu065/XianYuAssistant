@@ -44,6 +44,16 @@ public class XianyuGoodsInfo {
     private String detailInfo;
     
     /**
+     * 商品详情页URL
+     */
+    private String detailUrl;
+    
+    /**
+     * 关联的闲鱼账号ID
+     */
+    private Long xianyuAccountId;
+    
+    /**
      * 商品价格
      */
     private String soldPrice;

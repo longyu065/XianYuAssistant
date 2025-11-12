@@ -14,17 +14,19 @@ public interface GoodsInfoService {
      * 如果商品已存在（根据xy_good_id判断），则更新；否则新增
      *
      * @param itemDTO 商品DTO
+     * @param xianyuAccountId 闲鱼账号ID
      * @return 是否成功
      */
-    boolean saveOrUpdateGoodsInfo(ItemDTO itemDTO);
+    boolean saveOrUpdateGoodsInfo(ItemDTO itemDTO, Long xianyuAccountId);
     
     /**
      * 批量保存或更新商品信息
      *
      * @param itemList 商品列表
+     * @param xianyuAccountId 闲鱼账号ID
      * @return 成功保存的数量
      */
-    int batchSaveOrUpdateGoodsInfo(List<ItemDTO> itemList);
+    int batchSaveOrUpdateGoodsInfo(List<ItemDTO> itemList, Long xianyuAccountId);
     
     /**
      * 根据闲鱼商品ID查询商品信息
@@ -41,4 +43,13 @@ public interface GoodsInfoService {
      * @return 商品列表
      */
     List<com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo> listByStatus(Integer status);
+    
+    /**
+     * 更新商品详情信息
+     *
+     * @param xyGoodId 闲鱼商品ID
+     * @param detailInfo 详情信息JSON字符串
+     * @return 是否成功
+     */
+    boolean updateDetailInfo(String xyGoodId, String detailInfo);
 }

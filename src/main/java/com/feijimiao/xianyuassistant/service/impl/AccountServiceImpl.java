@@ -290,4 +290,52 @@ public class AccountServiceImpl implements AccountService {
             return null;
         }
     }
+    
+    @Override
+    public Long getAccountIdByAccountNote(String accountNote) {
+        try {
+            log.info("根据账号备注获取账号ID: accountNote={}", accountNote);
+
+            // 查询账号
+            LambdaQueryWrapper<XianyuAccount> accountQuery = new LambdaQueryWrapper<>();
+            accountQuery.eq(XianyuAccount::getAccountNote, accountNote);
+            XianyuAccount account = accountMapper.selectOne(accountQuery);
+
+            if (account == null) {
+                log.warn("未找到账号: accountNote={}", accountNote);
+                return null;
+            }
+
+            log.info("获取账号ID成功: accountNote={}, accountId={}", accountNote, account.getId());
+            return account.getId();
+
+        } catch (Exception e) {
+            log.error("获取账号ID失败: accountNote={}", accountNote, e);
+            return null;
+        }
+    }
+    
+    @Override
+    public Long getAccountIdByUnb(String unb) {
+        try {
+            log.info("根据UNB获取账号ID: unb={}", unb);
+
+            // 查询账号
+            LambdaQueryWrapper<XianyuAccount> accountQuery = new LambdaQueryWrapper<>();
+            accountQuery.eq(XianyuAccount::getUnb, unb);
+            XianyuAccount account = accountMapper.selectOne(accountQuery);
+
+            if (account == null) {
+                log.warn("未找到账号: unb={}", unb);
+                return null;
+            }
+
+            log.info("获取账号ID成功: unb={}, accountId={}", unb, account.getId());
+            return account.getId();
+
+        } catch (Exception e) {
+            log.error("获取账号ID失败: unb={}", unb, e);
+            return null;
+        }
+    }
 }

@@ -199,10 +199,10 @@
     <div class="container" id="container_7a8b9">
 
         <div class="form-group" id="formGroup_1a2b3">
-            <label for="cookieId_8a7f3" id="label_2c3d4">账号标识:</label>
-            <input type="text" id="cookieId_8a7f3" placeholder="请输入账号ID、账号备注或UNB" value="1">
+            <label for="xianyuAccountId_8a7f3" id="label_2c3d4">闲鱼账号ID:</label>
+            <input type="number" id="xianyuAccountId_8a7f3" placeholder="请输入闲鱼账号ID" value="1" min="1">
             <small style="color: #888; font-size: 12px; margin-top: 5px; display: block;">
-                支持输入：账号ID（如：1）、账号备注（如：账号_12345678）或UNB
+                请输入闲鱼账号ID（数字），如：1
             </small>
         </div>
 
@@ -265,9 +265,9 @@
             
             const items = data.items || [];
             const stats = {
-                total: data.total_count || data.current_count || items.length,
-                pages: data.total_pages || data.page_number || 1,
-                saved: data.total_saved || data.saved_count || 0
+                total: data.totalCount || items.length,
+                success: data.successCount || 0,
+                updated: data.updatedItemIds?.length || 0
             };
 
             let html = `
@@ -276,31 +276,36 @@
                         <div class="stat-value" id="statTotalVal_9k0l1">${stats.total}</div>
                         <div class="stat-label" id="statTotalLbl_0m1n2">商品总数</div>
                     </div>
-                    <div class="stat-card" id="statPages_1o2p3">
-                        <div class="stat-value" id="statPagesVal_2q3r4">${stats.pages}</div>
-                        <div class="stat-label" id="statPagesLbl_3s4t5">页数</div>
+                    <div class="stat-card" id="statSuccess_1o2p3">
+                        <div class="stat-value" id="statSuccessVal_2q3r4">${stats.success}</div>
+                        <div class="stat-label" id="statSuccessLbl_3s4t5">成功数量</div>
                     </div>
-                    <div class="stat-card" id="statSaved_4u5v6">
-                        <div class="stat-value" id="statSavedVal_5w6x7">${stats.saved}</div>
-                        <div class="stat-label" id="statSavedLbl_6y7z8">已保存</div>
+                    <div class="stat-card" id="statUpdated_4u5v6">
+                        <div class="stat-value" id="statUpdatedVal_5w6x7">${stats.updated}</div>
+                        <div class="stat-label" id="statUpdatedLbl_6y7z8">已更新</div>
                     </div>
                 </div>
                 <div class="items-grid" id="itemsGrid_7a8b9">
             `;
 
             items.forEach((item, index) => {
-                const picUrl = item.pic_info?.picUrl || item.pic_info?.pic_url || '';
-                const imageUrl = picUrl ? `https:${picUrl}` : 'https://via.placeholder.com/280x200?text=No+Image';
+                // 处理图片URL（数据库中的数据）
+                let imageUrl = 'https://via.placeholder.com/280x200?text=No+Image';
+                if (item.coverPic) {
+                    imageUrl = item.coverPic.startsWith('http') ? item.coverPic : `https:${item.coverPic}`;
+                }
+                
                 const randomId = `item_${index}_${Math.random().toString(36).substr(2, 9)}`;
+                const statusText = item.status === 0 ? '在售' : (item.status === 1 ? '已下架' : '已售出');
                 
                 html += `
                     <div class="item-card" id="${randomId}">
-                        <img src="${imageUrl}" alt="${item.title || item.item_title || '商品图片'}" class="item-image" id="${randomId}_img" onerror="this.src='https://via.placeholder.com/280x200?text=No+Image'">
-                        <div class="item-title" id="${randomId}_title">${item.title || item.item_title || '无标题'}</div>
-                        <div class="item-price" id="${randomId}_price">${item.price_text || item.item_price || '价格未知'}</div>
-                        <div class="item-info" id="${randomId}_id">商品ID: ${item.id || item.item_id || 'N/A'}</div>
-                        <div class="item-info" id="${randomId}_cat">分类: ${item.category_id || item.item_category || 'N/A'}</div>
-                        <div class="item-info" id="${randomId}_status">状态: ${item.item_status || 'N/A'}</div>
+                        <img src="${imageUrl}" alt="${item.title || '商品图片'}" class="item-image" id="${randomId}_img" onerror="this.src='https://via.placeholder.com/280x200?text=No+Image'">
+                        <div class="item-title" id="${randomId}_title">${item.title || '无标题'}</div>
+                        <div class="item-price" id="${randomId}_price">¥${item.soldPrice || '价格未知'}</div>
+                        <div class="item-info" id="${randomId}_id">商品ID: ${item.xyGoodId || 'N/A'}</div>
+                        <div class="item-info" id="${randomId}_status">状态: ${statusText}</div>
+                        ${item.detailUrl ? `<div class="item-info" id="${randomId}_url"><a href="${item.detailUrl}" target="_blank">查看详情</a></div>` : ''}
                     </div>
                 `;
             });
@@ -308,17 +313,40 @@
             html += '</div>';
             document.getElementById('result_4a5b6').innerHTML = html;
         }
+        
+        function displayRefreshResult(data) {
+            hideLoading();
+            
+            const stats = {
+                total: data.totalCount || 0,
+                success: data.successCount || 0,
+                updated: data.updatedItemIds?.length || 0
+            };
+
+            let html = `
+                <div class="stats" id="stats_7g8h9">
+                    <div class="stat-card" id="statTotal_8i9j0">
+                        <div class="stat-value" id="statTotalVal_9k0l1">${stats.total}</div>
+                        <div class="stat-label" id="statTotalLbl_0m1n2">商品总数</div>
+                    </div>
+                    <div class="stat-card" id="statSuccess_1o2p3">
+                        <div class="stat-value" id="statSuccessVal_2q3r4">${stats.success}</div>
+                        <div class="stat-label" id="statSuccessLbl_3s4t5">成功数量</div>
+                    </div>
+                    <div class="stat-card" id="statUpdated_4u5v6">
+                        <div class="stat-value" id="statUpdatedVal_5w6x7">${stats.updated}</div>
+                        <div class="stat-label" id="statUpdatedLbl_6y7z8">已更新</div>
+                    </div>
+                </div>
+                <div class="success" id="success_refresh">
+                    ✅ 刷新成功！共获取 ${stats.total} 个商品，成功保存 ${stats.success} 个
+                </div>
+            `;
+
+            document.getElementById('result_4a5b6').innerHTML = html;
+        }
 
         async function getItemList() {
-            const cookieId = document.getElementById('cookieId_8a7f3').value.trim();
-            const pageNumber = parseInt(document.getElementById('pageNumber_9b2e4').value);
-            const pageSize = parseInt(document.getElementById('pageSize_4c6d1').value);
-
-            if (!cookieId) {
-                showError('请输入账号ID');
-                return;
-            }
-
             showLoading();
 
             try {
@@ -328,9 +356,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        cookieId: cookieId,
-                        pageNumber: pageNumber,
-                        pageSize: pageSize
+                        status: 0  // 0=在售
                     })
                 });
                 const result = await response.json();
@@ -346,12 +372,12 @@
         }
 
         async function getAllItems() {
-            const cookieId = document.getElementById('cookieId_8a7f3').value.trim();
+            const xianyuAccountId = document.getElementById('xianyuAccountId_8a7f3').value.trim();
             const pageSize = parseInt(document.getElementById('pageSize_4c6d1').value);
             const maxPages = document.getElementById('maxPages_5d8e2').value;
 
-            if (!cookieId) {
-                showError('请输入账号ID');
+            if (!xianyuAccountId) {
+                showError('请输入闲鱼账号ID');
                 return;
             }
 
@@ -359,7 +385,7 @@
 
             try {
                 const requestBody = {
-                    cookieId: cookieId,
+                    xianyuAccountId: parseInt(xianyuAccountId),
                     pageSize: pageSize
                 };
                 
@@ -367,7 +393,7 @@
                     requestBody.maxPages = parseInt(maxPages);
                 }
 
-                const response = await fetch(`${API_BASE}/all`, {
+                const response = await fetch(`${API_BASE}/refresh`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -377,9 +403,9 @@
                 const result = await response.json();
 
                 if (result.code === 200 && result.data) {
-                    displayItems(result.data);
+                    displayRefreshResult(result.data);
                 } else {
-                    showError(result.msg || '获取所有商品失败');
+                    showError(result.msg || '刷新商品失败');
                 }
             } catch (error) {
                 showError('请求失败: ' + error.message);
@@ -387,23 +413,16 @@
         }
 
         async function getItemsFromDb() {
-            const cookieId = document.getElementById('cookieId_8a7f3').value.trim();
-
-            if (!cookieId) {
-                showError('请输入账号ID');
-                return;
-            }
-
             showLoading();
 
             try {
-                const response = await fetch(`${API_BASE}/db`, {
+                const response = await fetch(`${API_BASE}/list`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        cookieId: cookieId
+                        status: 0  // 0=在售
                     })
                 });
                 const result = await response.json();

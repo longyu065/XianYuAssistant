@@ -66,4 +66,20 @@ public interface AccountService {
      * @return m_h5_tk token
      */
     String getMh5tkByAccountId(Long accountId);
+    
+    /**
+     * 根据账号备注获取账号ID
+     *
+     * @param accountNote 账号备注
+     * @return 账号ID
+     */
+    Long getAccountIdByAccountNote(String accountNote);
+    
+    /**
+     * 根据UNB获取账号ID
+     *
+     * @param unb UNB标识
+     * @return 账号ID
+     */
+    Long getAccountIdByUnb(String unb);
 }

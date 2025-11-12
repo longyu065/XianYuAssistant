@@ -8,9 +8,9 @@ import lombok.Data;
 @Data
 public class AllItemsReqDTO {
     /**
-     * 账号ID
+     * 闲鱼账号ID
      */
-    private String cookieId;
+    private Long xianyuAccountId;
     
     /**
      * 每页数量，默认20

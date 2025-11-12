@@ -38,7 +38,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean saveOrUpdateGoodsInfo(ItemDTO itemDTO) {
+    public boolean saveOrUpdateGoodsInfo(ItemDTO itemDTO, Long xianyuAccountId) {
         try {
             if (itemDTO == null || itemDTO.getDetailParams() == null) {
                 log.warn("商品信息为空，跳过保存");
@@ -66,6 +66,12 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
             String infoPic = itemDTO.getDetailParams().getImageInfos();
             goodsInfo.setInfoPic(infoPic);
             
+            // 商品详情页URL
+            goodsInfo.setDetailUrl(itemDTO.getDetailUrl());
+            
+            // 关联闲鱼账号ID
+            goodsInfo.setXianyuAccountId(xianyuAccountId);
+            
             // 价格信息
             if (itemDTO.getPriceInfo() != null) {
                 goodsInfo.setSoldPrice(itemDTO.getPriceInfo().getPrice());
@@ -79,14 +85,15 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
                 goodsInfo.setId(existingGoods.getId());
                 goodsInfo.setUpdatedTime(getCurrentTimeString());
                 int updated = goodsInfoMapper.updateById(goodsInfo);
-                log.info("更新商品信息: xyGoodId={}, title={}", xyGoodId, goodsInfo.getTitle());
+                log.info("更新商品信息: xyGoodId={}, title={}, accountId={}", xyGoodId, goodsInfo.getTitle(), xianyuAccountId);
                 return updated > 0;
             } else {
                 // 新增商品（ID使用雪花算法自动生成）
                 goodsInfo.setCreatedTime(getCurrentTimeString());
                 goodsInfo.setUpdatedTime(getCurrentTimeString());
                 int inserted = goodsInfoMapper.insert(goodsInfo);
-                log.info("新增商品信息: xyGoodId={}, title={}, id={}", xyGoodId, goodsInfo.getTitle(), goodsInfo.getId());
+                log.info("新增商品信息: xyGoodId={}, title={}, id={}, accountId={}", 
+                        xyGoodId, goodsInfo.getTitle(), goodsInfo.getId(), xianyuAccountId);
                 return inserted > 0;
             }
             
@@ -99,7 +106,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int batchSaveOrUpdateGoodsInfo(List<ItemDTO> itemList) {
+    public int batchSaveOrUpdateGoodsInfo(List<ItemDTO> itemList, Long xianyuAccountId) {
         if (itemList == null || itemList.isEmpty()) {
             log.warn("商品列表为空，跳过批量保存");
             return 0;
@@ -108,7 +115,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         int successCount = 0;
         for (ItemDTO itemDTO : itemList) {
             try {
-                if (saveOrUpdateGoodsInfo(itemDTO)) {
+                if (saveOrUpdateGoodsInfo(itemDTO, xianyuAccountId)) {
                     successCount++;
                 }
             } catch (Exception e) {
@@ -118,7 +125,7 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
             }
         }
         
-        log.info("批量保存商品信息完成: 总数={}, 成功={}", itemList.size(), successCount);
+        log.info("批量保存商品信息完成: 总数={}, 成功={}, accountId={}", itemList.size(), successCount, xianyuAccountId);
         return successCount;
     }
 
@@ -144,6 +151,31 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
         } catch (Exception e) {
             log.error("根据状态查询商品列表失败: status={}", status, e);
             return null;
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateDetailInfo(String xyGoodId, String detailInfo) {
+        try {
+            LambdaQueryWrapper<XianyuGoodsInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(XianyuGoodsInfo::getXyGoodId, xyGoodId);
+            XianyuGoodsInfo existingGoods = goodsInfoMapper.selectOne(queryWrapper);
+            
+            if (existingGoods == null) {
+                log.warn("商品不存在，无法更新详情: xyGoodId={}", xyGoodId);
+                return false;
+            }
+            
+            existingGoods.setDetailInfo(detailInfo);
+            existingGoods.setUpdatedTime(getCurrentTimeString());
+            int updated = goodsInfoMapper.updateById(existingGoods);
+            
+            log.info("更新商品详情成功: xyGoodId={}", xyGoodId);
+            return updated > 0;
+        } catch (Exception e) {
+            log.error("更新商品详情失败: xyGoodId={}", xyGoodId, e);
+            throw new RuntimeException("更新商品详情失败: " + e.getMessage(), e);
         }
     }
 }

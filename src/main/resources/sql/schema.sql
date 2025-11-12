@@ -46,19 +46,23 @@ $$
 CREATE TABLE IF NOT EXISTS xianyu_goods_info (
     id BIGINT PRIMARY KEY,                        -- 表ID（使用雪花ID）
     xy_good_id VARCHAR(100) NOT NULL,             -- 闲鱼商品ID
+    xianyu_account_id BIGINT,                     -- 关联的闲鱼账号ID
     title VARCHAR(500),                           -- 商品标题
     cover_pic TEXT,                               -- 封面图片URL
     info_pic TEXT,                                -- 商品详情图片（JSON数组）
     detail_info TEXT,                             -- 商品详情信息（预留字段）
+    detail_url TEXT,                              -- 商品详情页URL
     sold_price VARCHAR(50),                       -- 商品价格
     status TINYINT DEFAULT 0,                     -- 商品状态 0:在售 1:已下架 2:已售出
     created_time DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP   -- 更新时间
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 更新时间
+    FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)
 );
 
 -- 创建商品表索引
 CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id);
 CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status);
+CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods_info(xianyu_account_id);
 
 -- 创建商品表更新时间触发器
 CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_info_time 

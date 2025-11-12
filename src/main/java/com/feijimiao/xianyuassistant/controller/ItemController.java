@@ -29,7 +29,7 @@ public class ItemController {
     @PostMapping("/refresh")
     public ResultObject<RefreshItemsRespDTO> refreshItems(@RequestBody AllItemsReqDTO reqDTO) {
         try {
-            log.info("刷新商品数据请求: cookieId={}", reqDTO.getCookieId());
+            log.info("刷新商品数据请求: xianyuAccountId={}", reqDTO.getXianyuAccountId());
             return itemService.refreshItems(reqDTO);
         } catch (Exception e) {
             log.error("刷新商品数据失败", e);
