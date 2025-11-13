@@ -1,0 +1,37 @@
+/* 消息页面样式 */
+
+.message-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.message-item {
+    padding: 16px;
+    border-bottom: 1px solid #e8e8e8;
+    transition: all 0.2s;
+}
+
+.message-item:hover {
+    background: #fafafa;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.message-sender {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.message-time {
+    font-size: 12px;
+    color: #666666;
+}
+
+.message-content {
+    font-size: 14px;
+    color: #1a1a1a;
+}

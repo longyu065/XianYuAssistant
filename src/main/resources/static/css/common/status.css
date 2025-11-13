@@ -1,0 +1,47 @@
+/* 状态标签 */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+    text-align: left;
+}
+
+.status-online {
+    background: #d1f4e0;
+    color: #34c759;
+}
+
+.status-offline {
+    background: #ffe5e5;
+    color: #ff3b30;
+}
+
+.status-active {
+    background: #d1f4e0;
+    color: #34c759;
+}
+
+.status-inactive {
+    background: #f0f0f0;
+    color: #666666;
+}
+
+.account-status-active {
+    background: #d1f4e0;
+    color: #34c759;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.account-status-inactive {
+    background: #ffe5e5;
+    color: #ff3b30;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}

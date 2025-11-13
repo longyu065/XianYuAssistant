@@ -1,0 +1,57 @@
+/* 按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.btn-outline {
+    background: white;
+    color: #1a1a1a;
+    border: 1px solid #d4d4d4;
+}
+
+.btn-outline:hover {
+    background: #f8f8f8;
+}
+
+.btn-primary {
+    background: #1a1a1a;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2a2a2a;
+}
+
+.btn-success {
+    background: #34c759;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #2fb350;
+}
+
+.btn-danger {
+    background: #ff3b30;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e6342a;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+}

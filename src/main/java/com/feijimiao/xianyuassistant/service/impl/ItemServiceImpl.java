@@ -7,6 +7,7 @@ import com.feijimiao.xianyuassistant.model.dto.*;
 import com.feijimiao.xianyuassistant.service.ItemService;
 import com.feijimiao.xianyuassistant.utils.XianyuApiUtils;
 import com.feijimiao.xianyuassistant.utils.XianyuSignUtils;
+import com.feijimiao.xianyuassistant.utils.ItemDetailUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -504,7 +505,12 @@ public class ItemServiceImpl implements ItemService {
             String detailJson = objectMapper.writeValueAsString(data);
             log.info("API获取商品详情成功: itemId={}, 详情长度={}", itemId, detailJson.length());
             
-            return detailJson;
+            // 提取desc字段
+            String extractedDesc = ItemDetailUtils.extractDescFromDetailJson(detailJson);
+            log.info("提取desc字段成功: itemId={}, 原始长度={}, 提取后长度={}", 
+                    itemId, detailJson.length(), extractedDesc.length());
+            
+            return extractedDesc;
             
         } catch (Exception e) {
             log.error("API获取商品详情异常: itemId={}", itemId, e);

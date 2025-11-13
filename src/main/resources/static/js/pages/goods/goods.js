@@ -15,7 +15,7 @@ const GoodsPage = {
                         <option value="2">已售出</option>
                     </select>
                     <button class="btn btn-outline" onclick="GoodsManager.loadGoods(GoodsManager.currentXianyuAccountId)">刷新列表</button>
-                    <button class="btn btn-primary" onclick="GoodsManager.refreshGoods()">同步商品</button>
+                    <button class="btn btn-primary" onclick="GoodsManager.refreshGoods()">同步闲鱼商品</button>
                 </div>
             </div>
 
@@ -37,6 +37,21 @@ const GoodsPage = {
             <div id="imagePreviewModal" class="modal" onclick="this.classList.remove('show')">
                 <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent; border: none;">
                     <img id="previewImage" style="max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                </div>
+            </div>
+            
+            <!-- 商品详情模态框 -->
+            <div id="itemDetailModal" class="modal" onclick="event.target.id === 'itemDetailModal' && this.classList.remove('show')">
+                <div class="modal-content goods-detail-modal">
+                    <div class="modal-header">
+                        <h3>商品详情</h3>
+                        <div class="modal-actions">
+                            <button class="btn btn-outline btn-small" onclick="document.getElementById('itemDetailModal').classList.remove('show')">×</button>
+                        </div>
+                    </div>
+                    <div id="itemDetailContent">
+                        <div class="loading">加载中...</div>
+                    </div>
                 </div>
             </div>
         `;

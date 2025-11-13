@@ -6,6 +6,7 @@ import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
 import com.feijimiao.xianyuassistant.model.dto.ItemDTO;
 import com.feijimiao.xianyuassistant.service.GoodsInfoService;
+import com.feijimiao.xianyuassistant.utils.ItemDetailUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -158,6 +159,9 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     @Transactional(rollbackFor = Exception.class)
     public boolean updateDetailInfo(String xyGoodId, String detailInfo) {
         try {
+            // 提取desc字段
+            String extractedDesc = ItemDetailUtils.extractDescFromDetailJson(detailInfo);
+            
             LambdaQueryWrapper<XianyuGoodsInfo> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(XianyuGoodsInfo::getXyGoodId, xyGoodId);
             XianyuGoodsInfo existingGoods = goodsInfoMapper.selectOne(queryWrapper);
@@ -167,11 +171,13 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
                 return false;
             }
             
-            existingGoods.setDetailInfo(detailInfo);
+            existingGoods.setDetailInfo(extractedDesc);
             existingGoods.setUpdatedTime(getCurrentTimeString());
             int updated = goodsInfoMapper.updateById(existingGoods);
             
-            log.info("更新商品详情成功: xyGoodId={}", xyGoodId);
+            log.info("更新商品详情成功: xyGoodId={}, 原始详情长度={}, 提取后长度={}", 
+                    xyGoodId, detailInfo != null ? detailInfo.length() : 0, 
+                    extractedDesc != null ? extractedDesc.length() : 0);
             return updated > 0;
         } catch (Exception e) {
             log.error("更新商品详情失败: xyGoodId={}", xyGoodId, e);

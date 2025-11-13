@@ -1,0 +1,12 @@
+/* 二维码登录页面样式 */
+
+.qr-code {
+    text-align: center;
+    padding: 20px;
+}
+
+.qr-code img {
+    max-width: 300px;
+    border: 1px solid #d4d4d4;
+    border-radius: 8px;
+}

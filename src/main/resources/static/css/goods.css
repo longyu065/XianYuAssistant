@@ -38,8 +38,8 @@
 }
 
 /* 商品表格列宽 */
-.goods-table th:nth-child(1),
-.goods-table td:nth-child(1) {
+.goods-table th:nth-child(3),
+.goods-table td:nth-child(3) {
     width: 80px;
     text-align: center;
 }
@@ -49,21 +49,23 @@
     width: 120px;
 }
 
-.goods-table th:nth-child(3),
-.goods-table td:nth-child(3) {
-    width: auto;
-    min-width: 200px;
+.goods-table th:nth-child(4),
+.goods-table td:nth-child(4) {
+    width: 100px;
+    min-width: 100px;
+    text-align: left;
 }
 
 .goods-table th:nth-child(4),
 .goods-table td:nth-child(4) {
-    width: 100px;
-    text-align: right;
+    width: 60px;
+    text-align: left;
 }
 
 .goods-table th:nth-child(5),
 .goods-table td:nth-child(5) {
-    width: 120px;
+    width: auto;
+    text-align: right;
 }
 
 .goods-table th:nth-child(6),
@@ -79,8 +81,8 @@
 
 /* 商品图片 */
 .goods-image-table {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     border-radius: 8px;
     overflow: hidden;
     margin: 0;
@@ -199,6 +201,151 @@
     background: #2fb350;
 }
 
+/* 商品详情模态框样式 */
+.goods-detail-modal {
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: hidden;
+}
+
+.goods-detail-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.goods-detail-modal .modal-header h3 {
+    margin: 0;
+}
+
+/* 右上角按钮区域 */
+.modal-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.goods-detail-modal #itemDetailContent {
+    padding: 16px;
+}
+
+/* 商品详情弹窗样式 */
+.goods-detail-container {
+    padding: 20px;
+}
+
+.goods-detail-layout {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.goods-detail-image-container {
+    flex: 0 0 300px;
+}
+
+.goods-detail-main-image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
+.goods-detail-thumbnails {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.goods-detail-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #e8e8e8;
+    cursor: pointer;
+}
+
+.goods-detail-info-container {
+    flex: 1;
+}
+
+.goods-detail-title {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.goods-detail-price-section {
+    margin-bottom: 24px;
+}
+
+.goods-detail-price-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.goods-detail-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ff3b30;
+}
+
+/* 状态、商品ID、账号ID显示在一行 */
+.goods-detail-info-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.goods-detail-info-section {
+    flex: 1;
+    min-width: 120px;
+}
+
+.goods-detail-info-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.goods-detail-info-value {
+    font-size: 14px;
+    color: #333;
+}
+
+.goods-detail-info-value.goods-detail-id {
+    font-family: 'Courier New', monospace;
+}
+
+.goods-detail-time-section {
+    margin-bottom: 24px;
+}
+
+.goods-detail-desc-section {
+    margin-bottom: 24px;
+}
+
+.goods-detail-desc-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.goods-detail-desc {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    padding: 12px;
+    background: #f8f8f8;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
     .goods-table-container {
@@ -232,5 +379,32 @@
     .status-badge {
         padding: 2px 8px;
         font-size: 10px;
+    }
+    
+    .goods-detail-container {
+        padding: 16px;
+    }
+    
+    .goods-detail-layout {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .goods-detail-image-container {
+        flex: 0 0 200px;
+    }
+    
+    .goods-detail-main-image {
+        height: 200px;
+    }
+    
+    .goods-detail-info-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .goods-detail-modal {
+        width: 95%;
+        max-height: 95vh;
     }
 }
