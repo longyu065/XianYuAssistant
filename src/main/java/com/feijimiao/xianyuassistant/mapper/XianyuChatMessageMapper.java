@@ -62,4 +62,10 @@ public interface XianyuChatMessageMapper {
             "WHERE sender_user_id = #{senderUserId} " +
             "ORDER BY message_time DESC")
     List<XianyuChatMessage> findBySenderUserId(@Param("senderUserId") String senderUserId);
+    
+    /**
+     * 根据账号ID删除消息
+     */
+    @Delete("DELETE FROM xianyu_chat_message WHERE xianyu_account_id = #{accountId}")
+    int deleteByAccountId(@Param("accountId") Long accountId);
 }

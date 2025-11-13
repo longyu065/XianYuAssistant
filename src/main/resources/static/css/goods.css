@@ -1,0 +1,236 @@
+/* 商品表格样式 */
+.goods-table-container {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #d4d4d4;
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+.goods-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.goods-table th {
+    text-align: left;
+    padding: 12px;
+    background: #fafafa;
+    font-weight: 600;
+    font-size: 14px;
+    color: #666666;
+    border-bottom: 2px solid #e8e8e8;
+    white-space: nowrap;
+}
+
+.goods-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 14px;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.goods-table tr:hover {
+    background: #fafafa;
+}
+
+/* 商品表格列宽 */
+.goods-table th:nth-child(1),
+.goods-table td:nth-child(1) {
+    width: 80px;
+    text-align: center;
+}
+
+.goods-table th:nth-child(2),
+.goods-table td:nth-child(2) {
+    width: 120px;
+}
+
+.goods-table th:nth-child(3),
+.goods-table td:nth-child(3) {
+    width: auto;
+    min-width: 200px;
+}
+
+.goods-table th:nth-child(4),
+.goods-table td:nth-child(4) {
+    width: 100px;
+    text-align: right;
+}
+
+.goods-table th:nth-child(5),
+.goods-table td:nth-child(5) {
+    width: 120px;
+}
+
+.goods-table th:nth-child(6),
+.goods-table td:nth-child(6) {
+    width: 180px;
+}
+
+.goods-table th:nth-child(7),
+.goods-table td:nth-child(7) {
+    width: 150px;
+    text-align: center;
+}
+
+/* 商品图片 */
+.goods-image-table {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0;
+}
+
+.goods-image-table img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 商品信息 */
+.goods-title-table {
+    font-weight: 500;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    display: block;
+}
+
+.goods-id-table {
+    font-size: 12px;
+    color: #666666;
+    font-family: 'Courier New', monospace;
+}
+
+.goods-price-table {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ff3b30;
+}
+
+/* 状态标签组 */
+.badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 状态标签 */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+}
+
+.status-online {
+    background: #d1f4e0;
+    color: #34c759;
+}
+
+.status-offline {
+    background: #ffe5e5;
+    color: #ff3b30;
+}
+
+.status-active {
+    background: #d1f4e0;
+    color: #34c759;
+}
+
+.status-inactive {
+    background: #f0f0f0;
+    color: #666666;
+}
+
+/* 操作按钮 */
+.goods-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.goods-actions .btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.btn-outline {
+    background: white;
+    color: #1a1a1a;
+    border: 1px solid #d4d4d4;
+}
+
+.btn-outline:hover {
+    background: #f8f8f8;
+}
+
+.btn-primary {
+    background: #1a1a1a;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2a2a2a;
+}
+
+.btn-success {
+    background: #34c759;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #2fb350;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .goods-table-container {
+        padding: 16px;
+    }
+    
+    .goods-table th,
+    .goods-table td {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    .goods-table th:nth-child(1),
+    .goods-table td:nth-child(1) {
+        width: 60px;
+    }
+    
+    .goods-image-table {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .goods-title-table {
+        font-size: 12px;
+    }
+    
+    .goods-price-table {
+        font-size: 14px;
+    }
+    
+    .status-badge {
+        padding: 2px 8px;
+        font-size: 10px;
+    }
+}

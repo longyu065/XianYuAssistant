@@ -28,4 +28,10 @@ public interface XianyuGoodsAutoDeliveryConfigMapper {
      */
     @Update("UPDATE xianyu_goods_auto_delivery_config SET type = #{type}, auto_delivery_content = #{autoDeliveryContent} WHERE id = #{id}")
     int update(XianyuGoodsAutoDeliveryConfig config);
+    
+    /**
+     * 根据账号ID删除配置
+     */
+    @Delete("DELETE FROM xianyu_goods_auto_delivery_config WHERE xianyu_account_id = #{accountId}")
+    int deleteByAccountId(@Param("accountId") Long accountId);
 }

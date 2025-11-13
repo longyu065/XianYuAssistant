@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -166,8 +167,12 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             }
             
             // 2. 获取自动回复配置列表
-            List<XianyuGoodsAutoReplyConfig> replyConfigs = autoReplyConfigMapper.selectByAccountAndGoodsId(accountId, xyGoodsId);
-            if (replyConfigs == null || replyConfigs.isEmpty()) {
+            XianyuGoodsAutoReplyConfig replyConfig = autoReplyConfigMapper.selectByAccountAndGoodsId(accountId, xyGoodsId);
+            List<XianyuGoodsAutoReplyConfig> replyConfigs = new ArrayList<>();
+            if (replyConfig != null) {
+                replyConfigs.add(replyConfig);
+            }
+            if (replyConfigs.isEmpty()) {
                 log.info("【账号{}】商品未配置自动回复规则: xyGoodsId={}", accountId, xyGoodsId);
                 return;
             }

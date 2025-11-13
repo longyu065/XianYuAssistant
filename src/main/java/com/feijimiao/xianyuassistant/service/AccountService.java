@@ -82,4 +82,12 @@ public interface AccountService {
      * @return 账号ID
      */
     Long getAccountIdByUnb(String unb);
+    
+    /**
+     * 删除账号及其所有关联数据
+     *
+     * @param accountId 账号ID
+     * @return 是否删除成功
+     */
+    boolean deleteAccountAndRelatedData(Long accountId);
 }

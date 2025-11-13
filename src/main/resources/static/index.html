@@ -3,397 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>闲鱼助手 - 测试中心</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-
-        /* 左侧导航栏 */
-        .sidebar {
-            width: 250px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar-header {
-            padding: 30px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .sidebar-header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .sidebar-header p {
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        .nav-menu {
-            flex: 1;
-            padding: 20px 0;
-            overflow-y: auto;
-        }
-
-        .nav-section {
-            margin-bottom: 20px;
-        }
-
-        .nav-section-title {
-            padding: 10px 20px;
-            font-size: 12px;
-            font-weight: 600;
-            opacity: 0.6;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .nav-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-left-color: white;
-        }
-
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-            border-left-color: white;
-        }
-
-        .nav-item-icon {
-            font-size: 18px;
-        }
-
-        .nav-item-text {
-            font-size: 14px;
-        }
-
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 12px;
-            opacity: 0.6;
-            text-align: center;
-        }
-
-        /* 右侧内容区 */
-        .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .content-header {
-            background: white;
-            padding: 20px 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .content-title {
-            font-size: 24px;
-            color: #333;
-        }
-
-        .cookie-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            background: #f0f0f0;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-
-        .cookie-label {
-            color: #666;
-        }
-
-        .cookie-value {
-            font-weight: 600;
-            color: #667eea;
-        }
-
-        .content-body {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .content-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* 滚动条样式 */
-        .nav-menu::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .nav-menu::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-menu::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-        }
-
-        .nav-menu::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        /* 欢迎页面 */
-        .welcome-page {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .welcome-content {
-            text-align: center;
-            color: white;
-        }
-
-        .welcome-content h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .welcome-content p {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-
-        .welcome-features {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-top: 40px;
-            max-width: 600px;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-
-        .feature-card h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .feature-card p {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-    </style>
+    <title>闲鱼自动化管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/goods.css"> <!-- 新增商品管理CSS -->
 </head>
 <body>
-    <div class="container" id="container_a1b2c">
-        <!-- 左侧导航栏 -->
-        <div class="sidebar" id="sidebar_d3e4f">
-            <div class="sidebar-header" id="sidebarHeader_g5h6i">
-                <h1 id="title_j7k8l">🛍️ 闲鱼助手</h1>
-                <p id="subtitle_m9n0o">API测试中心</p>
-            </div>
-
-            <div class="nav-menu" id="navMenu_p1q2r">
-                <!-- 账号管理 -->
-                <div class="nav-section" id="section1_s3t4u">
-                    <div class="nav-section-title" id="sectionTitle1_v5w6x">账号管理</div>
-                    <div class="nav-item" id="navQrLogin_y7z8a" onclick="loadPage('qrlogin.html', '扫码登录', this)">
-                        <span class="nav-item-icon" id="icon1_b9c0d">📱</span>
-                        <span class="nav-item-text" id="text1_e1f2g">扫码登录</span>
-                    </div>
-                </div>
-
-                <!-- 商品管理 -->
-                <div class="nav-section" id="section2_h3i4j">
-                    <div class="nav-section-title" id="sectionTitle2_k5l6m">商品管理</div>
-                    <div class="nav-item" id="navItems_n7o8p" onclick="loadPage('items.html', '商品管理', this)">
-                        <span class="nav-item-icon" id="icon2_q9r0s">📦</span>
-                        <span class="nav-item-text" id="text2_t1u2v">商品管理</span>
-                    </div>
-                </div>
-
-                <!-- 订单管理 -->
-                <div class="nav-section">
-                    <div class="nav-section-title">订单管理</div>
-                    <div class="nav-item" onclick="loadPage('order.html', '确认发货', this)">
-                        <span class="nav-item-icon">🚚</span>
-                        <span class="nav-item-text">确认发货</span>
-                    </div>
-                </div>
-
-                <!-- WebSocket消息 -->
-                <div class="nav-section">
-                    <div class="nav-section-title">消息管理</div>
-                    <div class="nav-item" onclick="loadPage('websocket.html', 'WebSocket监听', this)">
-                        <span class="nav-item-icon">🔌</span>
-                        <span class="nav-item-text">WebSocket监听</span>
-                    </div>
-                    <div class="nav-item" onclick="loadPage('websocket-send.html', '发送消息', this)">
-                        <span class="nav-item-icon">💬</span>
-                        <span class="nav-item-text">发送消息</span>
-                    </div>
-                </div>
-
-                <!-- 系统说明 -->
-                <div class="nav-section" id="section3_w3x4y">
-                    <div class="nav-section-title" id="sectionTitle3_z5a6b">关于</div>
-                    <div class="nav-item" id="navAbout_c7d8e" onclick="showWelcome(this)">
-                        <span class="nav-item-icon" id="icon3_f9g0h">ℹ️</span>
-                        <span class="nav-item-text" id="text3_i1j2k">关于系统</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-footer" id="sidebarFooter_l3m4n">
-                © 2024 闲鱼助手<br>
-                仅供测试使用
-            </div>
+<div class="container" id="container-id-1">
+    <div class="sidebar" id="sidebar-id-2">
+        <div class="logo" id="logo-id-3">
+            <div class="logo-icon" id="logo-icon-id-4">闲</div>
+            <div class="logo-text" id="logo-text-id-5">自动化管理</div>
         </div>
-
-        <!-- 右侧内容区 -->
-        <div class="content" id="content_o5p6q">
-            <div class="content-header" id="contentHeader_r7s8t">
-                <div class="content-title" id="contentTitle_u9v0w">欢迎使用</div>
-                <div class="cookie-info" id="cookieInfo_x1y2z">
-                    <span class="cookie-label" id="cookieLabel_a3b4c">Cookie ID说明：</span>
-                    <span class="cookie-value" id="cookieValue_d5e6f">账号的唯一标识符</span>
-                </div>
-            </div>
-
-            <div class="content-body" id="contentBody_g7h8i">
-                <!-- 欢迎页面 -->
-                <div class="welcome-page" id="welcomePage_j9k0l">
-                    <div class="welcome-content" id="welcomeContent_m1n2o">
-                        <h1 id="welcomeTitle_p3q4r">🎉 欢迎使用闲鱼助手</h1>
-                        <p id="welcomeDesc1_s5t6u">这是一个功能强大的闲鱼账号管理工具</p>
-                        <p id="welcomeDesc2_v7w8x">请从左侧菜单选择功能进行测试</p>
-
-                        <div class="welcome-features" id="welcomeFeatures_y9z0a">
-                            <div class="feature-card" id="feature1_b1c2d">
-                                <h3 id="featureTitle1_e3f4g">📱 扫码登录</h3>
-                                <p id="featureDesc1_h5i6j">快速获取账号Cookie</p>
-                            </div>
-                            <div class="feature-card" id="feature2_k7l8m">
-                                <h3 id="featureTitle2_n9o0p">📦 商品管理</h3>
-                                <p id="featureDesc2_q1r2s">查看和管理商品信息</p>
-                            </div>
-                            <div class="feature-card" id="feature3_t3u4v">
-                                <h3 id="featureTitle3_w5x6y">🔐 安全可靠</h3>
-                                <p id="featureDesc3_z7a8b">Cookie加密存储</p>
-                            </div>
-                            <div class="feature-card" id="feature4_c9d0e">
-                                <h3 id="featureTitle4_f1g2h">⚡ 高效便捷</h3>
-                                <p id="featureDesc4_i3j4k">一键操作，简单易用</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="search-box" id="search-box-id-6">
+            <input type="text" placeholder="搜索..." id="searchInput">
         </div>
+        <nav class="nav-menu" id="nav-menu-id-7">
+            <div class="nav-item active" data-page="dashboard" id="nav-dashboard-id-8">📊 仪表板</div>
+            <div class="nav-item" data-page="accounts" id="nav-accounts-id-9">👤 闲鱼账号</div>
+            <div class="nav-item" data-page="goods" id="nav-goods-id-10">📦 商品管理</div>
+            <div class="nav-item" data-page="messages" id="nav-messages-id-11">💬 消息管理</div>
+            <div class="nav-section" id="nav-section-auto-id-12">自动化</div>
+            <div class="nav-item" data-page="auto-delivery" id="nav-auto-delivery-id-13">🤖 自动发货</div>
+            <div class="nav-item" data-page="auto-reply" id="nav-auto-reply-id-14">💭 自动回复</div>
+            <div class="nav-item" data-page="records" id="nav-records-id-15">📝 操作记录</div>
+            <div class="nav-section" id="nav-section-system-id-16">系统</div>
+            <div class="nav-item" data-page="qrlogin" id="nav-qrlogin-id-18">📱 扫码登录</div>
+        </nav>
     </div>
+    <div class="main-content" id="mainContent"></div>
+</div>
+<!-- 基础工具 -->
+<script src="js/api.js"></script>
+<script src="js/pageManager.js"></script>
 
-    <script>
-        let currentFrame = null;
+<!-- 页面模块 -->
+<script src="js/pages/dashboard/dashboard.js"></script>
 
-        function loadPage(url, title, element) {
-            // 更新标题
-            document.getElementById('contentTitle_u9v0w').textContent = title;
+<script src="js/pages/accounts/accounts.js"></script>
+<script src="js/pages/accounts/accountManager.js"></script>
 
-            // 更新导航激活状态
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            if (element) {
-                element.classList.add('active');
-            }
+<script src="js/pages/goods/goods.js"></script>
+<script src="js/pages/goods/goodsManager.js"></script>
 
-            // 隐藏欢迎页面
-            const welcomePage = document.getElementById('welcomePage_j9k0l');
-            welcomePage.style.display = 'none';
+<script src="js/pages/messages/messages.js"></script>
+<script src="js/pages/messages/messageManager.js"></script>
 
-            // 移除旧的iframe
-            if (currentFrame) {
-                currentFrame.remove();
-            }
+<script src="js/pages/autoDelivery/autoDelivery.js"></script>
+<script src="js/pages/autoDelivery/autoDeliveryManager.js"></script>
 
-            // 创建新的iframe
-            const iframe = document.createElement('iframe');
-            iframe.className = 'content-frame';
-            iframe.id = 'contentFrame_' + Math.random().toString(36).substr(2, 9);
-            iframe.src = url;
-            
-            document.getElementById('contentBody_g7h8i').appendChild(iframe);
-            currentFrame = iframe;
-        }
+<script src="js/pages/autoReply/autoReply.js"></script>
+<script src="js/pages/autoReply/autoReplyManager.js"></script>
 
-        function showWelcome(element) {
-            // 更新标题
-            document.getElementById('contentTitle_u9v0w').textContent = '欢迎使用';
+<script src="js/pages/records/records.js"></script>
+<script src="js/pages/records/recordManager.js"></script>
 
-            // 更新导航激活状态
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            if (element) {
-                element.classList.add('active');
-            }
+<script src="js/pages/qrlogin/qrlogin.js"></script>
+<script src="js/pages/qrlogin/qrloginManager.js"></script>
 
-            // 移除iframe
-            if (currentFrame) {
-                currentFrame.remove();
-                currentFrame = null;
-            }
-
-            // 显示欢迎页面
-            const welcomePage = document.getElementById('welcomePage_j9k0l');
-            welcomePage.style.display = 'flex';
-        }
-
-        // 页面加载时显示欢迎页面
-        window.addEventListener('load', function() {
-            const aboutNav = document.getElementById('navAbout_c7d8e');
-            aboutNav.classList.add('active');
-        });
-    </script>
+<!-- 初始化 -->
+<script>
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        PageManager.init();
+    });
+</script>
 </body>
 </html>

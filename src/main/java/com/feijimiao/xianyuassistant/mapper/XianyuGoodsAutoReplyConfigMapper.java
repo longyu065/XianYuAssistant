@@ -12,10 +12,16 @@ import java.util.List;
 public interface XianyuGoodsAutoReplyConfigMapper {
     
     /**
-     * 根据账号ID和商品ID查询所有配置
+     * 根据账号ID和商品ID查询配置
      */
     @Select("SELECT * FROM xianyu_goods_auto_reply_config WHERE xianyu_account_id = #{accountId} AND xy_goods_id = #{xyGoodsId}")
-    List<XianyuGoodsAutoReplyConfig> selectByAccountAndGoodsId(@Param("accountId") Long accountId, @Param("xyGoodsId") String xyGoodsId);
+    XianyuGoodsAutoReplyConfig selectByAccountAndGoodsId(@Param("accountId") Long accountId, @Param("xyGoodsId") String xyGoodsId);
+    
+    /**
+     * 根据账号ID查询所有配置
+     */
+    @Select("SELECT * FROM xianyu_goods_auto_reply_config WHERE xianyu_account_id = #{accountId}")
+    List<XianyuGoodsAutoReplyConfig> selectByAccountId(@Param("accountId") Long accountId);
     
     /**
      * 插入配置
@@ -32,8 +38,8 @@ public interface XianyuGoodsAutoReplyConfigMapper {
     int update(XianyuGoodsAutoReplyConfig config);
     
     /**
-     * 删除配置
+     * 根据账号ID删除配置
      */
-    @Delete("DELETE FROM xianyu_goods_auto_reply_config WHERE id = #{id}")
-    int delete(Long id);
+    @Delete("DELETE FROM xianyu_goods_auto_reply_config WHERE xianyu_account_id = #{accountId}")
+    int deleteByAccountId(@Param("accountId") Long accountId);
 }

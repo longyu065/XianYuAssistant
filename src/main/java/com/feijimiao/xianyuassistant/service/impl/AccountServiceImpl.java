@@ -3,8 +3,17 @@ package com.feijimiao.xianyuassistant.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.feijimiao.xianyuassistant.entity.XianyuAccount;
 import com.feijimiao.xianyuassistant.entity.XianyuCookie;
+import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
+import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
 import com.feijimiao.xianyuassistant.mapper.XianyuAccountMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuChatMessageMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsConfigMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryConfigMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryRecordMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoReplyConfigMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoReplyRecordMapper;
 import com.feijimiao.xianyuassistant.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +35,27 @@ public class AccountServiceImpl implements AccountService {
 
     @Autowired
     private XianyuCookieMapper cookieMapper;
+    
+    @Autowired
+    private XianyuChatMessageMapper chatMessageMapper;
+    
+    @Autowired
+    private XianyuGoodsInfoMapper goodsInfoMapper;
+    
+    @Autowired
+    private XianyuGoodsConfigMapper goodsConfigMapper;
+    
+    @Autowired
+    private XianyuGoodsAutoDeliveryConfigMapper autoDeliveryConfigMapper;
+    
+    @Autowired
+    private XianyuGoodsAutoDeliveryRecordMapper autoDeliveryRecordMapper;
+    
+    @Autowired
+    private XianyuGoodsAutoReplyConfigMapper autoReplyConfigMapper;
+    
+    @Autowired
+    private XianyuGoodsAutoReplyRecordMapper autoReplyRecordMapper;
     
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
@@ -336,6 +366,60 @@ public class AccountServiceImpl implements AccountService {
         } catch (Exception e) {
             log.error("获取账号ID失败: unb={}", unb, e);
             return null;
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteAccountAndRelatedData(Long accountId) {
+        try {
+            log.info("开始删除账号及其所有关联数据: accountId={}", accountId);
+            
+            // 1. 删除闲鱼聊天消息表数据
+            int chatMessageCount = chatMessageMapper.deleteByAccountId(accountId);
+            log.info("删除聊天消息数据: accountId={}, 删除数量={}", accountId, chatMessageCount);
+            
+            // 2. 删除闲鱼商品信息表数据
+            LambdaQueryWrapper<XianyuGoodsInfo> goodsInfoQuery = new LambdaQueryWrapper<>();
+            goodsInfoQuery.eq(XianyuGoodsInfo::getXianyuAccountId, accountId);
+            int goodsInfoCount = goodsInfoMapper.delete(goodsInfoQuery);
+            log.info("删除商品信息数据: accountId={}, 删除数量={}", accountId, goodsInfoCount);
+            
+            // 3. 删除闲鱼商品配置表数据
+            int goodsConfigCount = goodsConfigMapper.deleteByAccountId(accountId);
+            log.info("删除商品配置数据: accountId={}, 删除数量={}", accountId, goodsConfigCount);
+            
+            // 4. 删除闲鱼商品自动发货配置表数据
+            int autoDeliveryConfigCount = autoDeliveryConfigMapper.deleteByAccountId(accountId);
+            log.info("删除自动发货配置数据: accountId={}, 删除数量={}", accountId, autoDeliveryConfigCount);
+            
+            // 5. 删除闲鱼商品自动发货记录表数据
+            int autoDeliveryRecordCount = autoDeliveryRecordMapper.deleteByAccountId(accountId);
+            log.info("删除自动发货记录数据: accountId={}, 删除数量={}", accountId, autoDeliveryRecordCount);
+            
+            // 6. 删除闲鱼商品自动回复配置表数据
+            int autoReplyConfigCount = autoReplyConfigMapper.deleteByAccountId(accountId);
+            log.info("删除自动回复配置数据: accountId={}, 删除数量={}", accountId, autoReplyConfigCount);
+            
+            // 7. 删除闲鱼商品自动回复记录表数据
+            int autoReplyRecordCount = autoReplyRecordMapper.deleteByAccountId(accountId);
+            log.info("删除自动回复记录数据: accountId={}, 删除数量={}", accountId, autoReplyRecordCount);
+            
+            // 8. 删除闲鱼Cookie表数据
+            LambdaQueryWrapper<XianyuCookie> cookieQuery = new LambdaQueryWrapper<>();
+            cookieQuery.eq(XianyuCookie::getXianyuAccountId, accountId);
+            int cookieCount = cookieMapper.delete(cookieQuery);
+            log.info("删除Cookie数据: accountId={}, 删除数量={}", accountId, cookieCount);
+            
+            // 9. 删除闲鱼账号表数据
+            int accountCount = accountMapper.deleteById(accountId);
+            log.info("删除账号数据: accountId={}, 删除数量={}", accountId, accountCount);
+            
+            log.info("账号及其所有关联数据删除成功: accountId={}", accountId);
+            return true;
+        } catch (Exception e) {
+            log.error("删除账号及其关联数据失败: accountId={}", accountId, e);
+            throw new RuntimeException("删除账号失败: " + e.getMessage(), e);
         }
     }
 }

@@ -154,6 +154,78 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
         
+        // 商品配置表
+        requiredTables.put("xianyu_goods_config",
+            "CREATE TABLE xianyu_goods_config (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "xianyu_goods_id BIGINT, " +
+            "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "xianyu_auto_delivery_on TINYINT DEFAULT 0, " +
+            "xianyu_auto_reply_on TINYINT DEFAULT 0, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "update_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
+        // 商品自动发货配置表
+        requiredTables.put("xianyu_goods_auto_delivery_config",
+            "CREATE TABLE xianyu_goods_auto_delivery_config (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "xianyu_goods_id BIGINT, " +
+            "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "type TINYINT DEFAULT 1, " +
+            "auto_delivery_content TEXT, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "update_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
+        // 商品自动发货记录表
+        requiredTables.put("xianyu_goods_auto_delivery_record",
+            "CREATE TABLE xianyu_goods_auto_delivery_record (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "xianyu_goods_id BIGINT, " +
+            "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "buyer_name VARCHAR(100), " +
+            "delivery_content TEXT, " +
+            "state TINYINT DEFAULT 0, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
+        // 商品自动回复配置表
+        requiredTables.put("xianyu_goods_auto_reply_config",
+            "CREATE TABLE xianyu_goods_auto_reply_config (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "xianyu_goods_id BIGINT, " +
+            "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "keyword TEXT, " +
+            "reply_content TEXT, " +
+            "match_type TINYINT DEFAULT 1, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "update_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
+        // 商品自动回复记录表
+        requiredTables.put("xianyu_goods_auto_reply_record",
+            "CREATE TABLE xianyu_goods_auto_reply_record (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id BIGINT NOT NULL, " +
+            "xianyu_goods_id BIGINT, " +
+            "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "buyer_message TEXT, " +
+            "reply_content TEXT, " +
+            "matched_keyword VARCHAR(200), " +
+            "state TINYINT DEFAULT 0, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
         // 检查并创建缺失的表
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredTables.entrySet()) {
@@ -193,6 +265,12 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         goodsColumns.add(new ColumnDef("detail_url", "TEXT", "ALTER TABLE xianyu_goods ADD COLUMN detail_url TEXT"));
         goodsColumns.add(new ColumnDef("xianyu_account_id", "BIGINT", "ALTER TABLE xianyu_goods ADD COLUMN xianyu_account_id BIGINT"));
         tableColumns.put("xianyu_goods", goodsColumns);
+        
+        // xianyu_goods_auto_delivery_record 表需要的字段
+        List<ColumnDef> deliveryRecordColumns = new ArrayList<>();
+        deliveryRecordColumns.add(new ColumnDef("buyer_name", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN buyer_name VARCHAR(100)"));
+        deliveryRecordColumns.add(new ColumnDef("delivery_content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN delivery_content TEXT"));
+        tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
         
         int addedCount = 0;
         for (Map.Entry<String, List<ColumnDef>> entry : tableColumns.entrySet()) {
@@ -273,6 +351,48 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         requiredIndexes.put("idx_chat_message_unique",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_message_unique ON xianyu_chat_message(xianyu_account_id, pnm_id)");
         
+        // 商品配置表索引
+        requiredIndexes.put("idx_goods_config_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_goods_config_account_id ON xianyu_goods_config(xianyu_account_id)");
+        requiredIndexes.put("idx_goods_config_xy_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_goods_config_xy_goods_id ON xianyu_goods_config(xy_goods_id)");
+        requiredIndexes.put("idx_goods_config_unique",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_config_unique ON xianyu_goods_config(xianyu_account_id, xy_goods_id)");
+        
+        // 自动发货配置表索引
+        requiredIndexes.put("idx_auto_delivery_config_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_config_account_id ON xianyu_goods_auto_delivery_config(xianyu_account_id)");
+        requiredIndexes.put("idx_auto_delivery_config_xy_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_config_xy_goods_id ON xianyu_goods_auto_delivery_config(xy_goods_id)");
+        requiredIndexes.put("idx_auto_delivery_config_unique",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_delivery_config_unique ON xianyu_goods_auto_delivery_config(xianyu_account_id, xy_goods_id)");
+        
+        // 自动发货记录表索引
+        requiredIndexes.put("idx_auto_delivery_record_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_account_id ON xianyu_goods_auto_delivery_record(xianyu_account_id)");
+        requiredIndexes.put("idx_auto_delivery_record_xy_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_xy_goods_id ON xianyu_goods_auto_delivery_record(xy_goods_id)");
+        requiredIndexes.put("idx_auto_delivery_record_state",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_state ON xianyu_goods_auto_delivery_record(state)");
+        requiredIndexes.put("idx_auto_delivery_record_create_time",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_create_time ON xianyu_goods_auto_delivery_record(create_time)");
+        
+        // 自动回复配置表索引
+        requiredIndexes.put("idx_auto_reply_config_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_config_account_id ON xianyu_goods_auto_reply_config(xianyu_account_id)");
+        requiredIndexes.put("idx_auto_reply_config_xy_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_config_xy_goods_id ON xianyu_goods_auto_reply_config(xy_goods_id)");
+        
+        // 自动回复记录表索引
+        requiredIndexes.put("idx_auto_reply_record_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_account_id ON xianyu_goods_auto_reply_record(xianyu_account_id)");
+        requiredIndexes.put("idx_auto_reply_record_xy_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_xy_goods_id ON xianyu_goods_auto_reply_record(xy_goods_id)");
+        requiredIndexes.put("idx_auto_reply_record_state",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_state ON xianyu_goods_auto_reply_record(state)");
+        requiredIndexes.put("idx_auto_reply_record_create_time",
+            "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_create_time ON xianyu_goods_auto_reply_record(create_time)");
+        
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {
             String indexName = entry.getKey();
@@ -335,6 +455,24 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "AFTER UPDATE ON xianyu_chat_message " +
             "BEGIN " +
             "UPDATE xianyu_chat_message SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_goods_config_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_config_time " +
+            "AFTER UPDATE ON xianyu_goods_config " +
+            "BEGIN " +
+            "UPDATE xianyu_goods_config SET update_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_goods_auto_delivery_config_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_auto_delivery_config_time " +
+            "AFTER UPDATE ON xianyu_goods_auto_delivery_config " +
+            "BEGIN " +
+            "UPDATE xianyu_goods_auto_delivery_config SET update_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "END");
+        requiredTriggers.put("update_xianyu_goods_auto_reply_config_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_auto_reply_config_time " +
+            "AFTER UPDATE ON xianyu_goods_auto_reply_config " +
+            "BEGIN " +
+            "UPDATE xianyu_goods_auto_reply_config SET update_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
             "END");
         
         int createdCount = 0;
