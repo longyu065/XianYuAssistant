@@ -6,7 +6,7 @@ const AccountsPage = {
                 <h1 class="welcome">闲鱼账号</h1>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="AccountManager.showQRLoginModal()">📱 扫码添加闲鱼账号</button>
-                    <button class="btn btn-outline" onclick="AccountManager.showAddModal()">+ 手动添加</button>
+                    <button class="btn btn-outline" onclick="AccountManager.showManualAddModal()">+ 手动添加</button>
                 </div>
             </div>
 
@@ -35,6 +35,30 @@ const AccountsPage = {
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline" onclick="AccountManager.hideModal()">取消</button>
                             <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 手动添加账号模态框 -->
+            <div id="manualAddAccountModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">手动添加闲鱼账号</h3>
+                        <button class="modal-close" onclick="AccountManager.hideManualAddModal()">&times;</button>
+                    </div>
+                    <form id="manualAddAccountForm">
+                        <div class="form-group">
+                            <label class="form-label">账号备注</label>
+                            <input type="text" class="form-input" id="manualAccountNote" placeholder="请输入账号备注">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cookie</label>
+                            <textarea class="form-input" id="manualAccountCookie" placeholder="请输入Cookie" rows="6"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline" onclick="AccountManager.hideManualAddModal()">取消</button>
+                            <button type="submit" class="btn btn-primary">添加账号</button>
                         </div>
                     </form>
                 </div>
@@ -101,6 +125,12 @@ const AccountsPage = {
         document.getElementById('accountForm').addEventListener('submit', (e) => {
             e.preventDefault();
             AccountManager.saveAccount();
+        });
+        
+        // 绑定手动添加账号表单提交事件
+        document.getElementById('manualAddAccountForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            AccountManager.saveManualAddAccount();
         });
         
         // 加载账号列表

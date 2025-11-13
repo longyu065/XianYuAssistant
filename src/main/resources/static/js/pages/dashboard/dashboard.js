@@ -76,13 +76,19 @@ const DashboardPage = {
     async loadStats() {
         try {
             setTimeout(() => {
-                document.getElementById('accountCount').textContent = '8';
-                document.getElementById('goodsCount').textContent = '156';
-                document.getElementById('wsCount').textContent = '6';
-                document.getElementById('deliveryCount').textContent = '47';
+                // 确保DOM元素存在后再设置内容
+                const accountCountElement = document.getElementById('accountCount');
+                const goodsCountElement = document.getElementById('goodsCount');
+                const wsCountElement = document.getElementById('wsCount');
+                const deliveryCountElement = document.getElementById('deliveryCount');
+                
+                if (accountCountElement) accountCountElement.textContent = '8';
+                if (goodsCountElement) goodsCountElement.textContent = '156';
+                if (wsCountElement) wsCountElement.textContent = '6';
+                if (deliveryCountElement) deliveryCountElement.textContent = '47';
             }, 500);
         } catch (error) {
             console.error('加载统计数据失败:', error);
         }
-    }
+        }
 };

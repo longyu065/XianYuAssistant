@@ -73,9 +73,19 @@ const AccountManager = {
         document.getElementById('accountModalTitle').textContent = '添加账号';
         document.getElementById('accountId').value = '';
         document.getElementById('accountName').value = '';
-        document.getElementById('accountUnb').value = '';
-        document.getElementById('accountCookie').value = '';
         document.getElementById('accountModal').classList.add('show');
+    },
+    
+    // 显示手动添加账号模态框
+    showManualAddModal() {
+        document.getElementById('manualAccountNote').value = '';
+        document.getElementById('manualAccountCookie').value = '';
+        document.getElementById('manualAddAccountModal').classList.add('show');
+    },
+    
+    // 隐藏手动添加账号模态框
+    hideManualAddModal() {
+        document.getElementById('manualAddAccountModal').classList.remove('show');
     },
     
     // 编辑账号
@@ -115,6 +125,50 @@ const AccountManager = {
             }
         } catch (error) {
             console.error('保存账号失败:', error);
+            Utils.showMessage('保存失败: ' + error.message, 'error');
+        }
+    },
+    
+    // 保存手动添加的账号
+    async saveManualAddAccount() {
+        const accountNote = document.getElementById('manualAccountNote').value.trim();
+        const cookie = document.getElementById('manualAccountCookie').value.trim();
+        
+        // 验证输入
+        if (!accountNote) {
+            Utils.showMessage('请输入账号备注', 'error');
+            return;
+        }
+        
+        if (!cookie) {
+            Utils.showMessage('请输入Cookie', 'error');
+            return;
+        }
+        
+        try {
+            // 调用后端接口保存手动添加的账号
+            const response = await fetch('/api/account/manualAdd', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accountNote: accountNote,
+                    cookie: cookie
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                Utils.showMessage('账号添加成功', 'success');
+                this.hideManualAddModal();
+                this.loadAccounts();
+            } else {
+                Utils.showMessage(result.msg || '添加失败', 'error');
+            }
+        } catch (error) {
+            console.error('保存手动添加账号失败:', error);
             Utils.showMessage('保存失败: ' + error.message, 'error');
         }
     },

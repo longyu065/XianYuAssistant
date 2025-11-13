@@ -10,6 +10,7 @@ import com.feijimiao.xianyuassistant.model.dto.DeleteAccountRespDTO;
 import com.feijimiao.xianyuassistant.model.dto.GetAccountDetailReqDTO;
 import com.feijimiao.xianyuassistant.model.dto.GetAccountDetailRespDTO;
 import com.feijimiao.xianyuassistant.model.dto.GetAccountListRespDTO;
+import com.feijimiao.xianyuassistant.model.dto.ManualAddAccountReqDTO;
 import com.feijimiao.xianyuassistant.model.dto.UpdateAccountReqDTO;
 import com.feijimiao.xianyuassistant.model.dto.UpdateAccountRespDTO;
 import com.feijimiao.xianyuassistant.service.AccountService;
@@ -76,6 +77,69 @@ public class AccountController {
             log.error("添加账号失败", e);
             return ResultObject.failed("添加账号失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 手动添加账号
+     */
+    @PostMapping("/manualAdd")
+    public ResultObject<AddAccountRespDTO> manualAddAccount(@RequestBody ManualAddAccountReqDTO reqDTO) {
+        try {
+            log.info("手动添加账号请求: accountNote={}", reqDTO.getAccountNote());
+            
+            if (reqDTO.getCookie() == null || reqDTO.getCookie().isEmpty()) {
+                return ResultObject.failed("Cookie不能为空");
+            }
+            
+            // 从Cookie中提取unb信息
+            String unb = extractUnbFromCookie(reqDTO.getCookie());
+            if (unb == null || unb.isEmpty()) {
+                return ResultObject.failed("无法从Cookie中提取UNB信息");
+            }
+            
+            // 检查账号是否已存在
+            Long existingAccountId = accountService.getAccountIdByUnb(unb);
+            if (existingAccountId != null) {
+                return ResultObject.failed("账号已存在");
+            }
+            
+            // 保存账号和Cookie信息
+            Long accountId = accountService.saveAccountAndCookie(
+                    reqDTO.getAccountNote(),
+                    unb,
+                    reqDTO.getCookie()
+            );
+            
+            AddAccountRespDTO respDTO = new AddAccountRespDTO();
+            respDTO.setAccountId(accountId);
+            respDTO.setMessage("添加成功");
+            return ResultObject.success(respDTO);
+        } catch (Exception e) {
+            log.error("手动添加账号失败", e);
+            return ResultObject.failed("添加账号失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 从Cookie字符串中提取UNB值
+     *
+     * @param cookie Cookie字符串
+     * @return UNB值，如果未找到则返回null
+     */
+    private String extractUnbFromCookie(String cookie) {
+        if (cookie == null || cookie.isEmpty()) {
+            return null;
+        }
+        
+        // 查找unb=后面的值
+        String[] cookieParts = cookie.split(";\\s*");
+        for (String part : cookieParts) {
+            if (part.startsWith("unb=")) {
+                return part.substring(4); // "unb=".length() = 4
+            }
+        }
+        
+        return null;
     }
 
     /**

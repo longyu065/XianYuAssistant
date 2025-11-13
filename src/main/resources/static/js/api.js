@@ -26,7 +26,8 @@ const API = {
         list: () => request(`${API_BASE}/account/list`, { method: 'POST', body: JSON.stringify({}) }),
         add: (data) => request(`${API_BASE}/account/add`, { method: 'POST', body: JSON.stringify(data) }),
         update: (data) => request(`${API_BASE}/account/update`, { method: 'POST', body: JSON.stringify(data) }),
-        delete: (data) => request(`${API_BASE}/account/delete`, { method: 'POST', body: JSON.stringify(data) })
+        delete: (data) => request(`${API_BASE}/account/delete`, { method: 'POST', body: JSON.stringify(data) }),
+        manualAdd: (data) => request(`${API_BASE}/account/manualAdd`, { method: 'POST', body: JSON.stringify(data) })
     },
     
     // 商品相关
