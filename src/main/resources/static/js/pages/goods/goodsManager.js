@@ -296,9 +296,6 @@ const GoodsManager = {
                         <button class="btn btn-outline btn-small" onclick="GoodsManager.viewDetail('${item.xyGoodId}')">
                             查看详情
                         </button>
-                        <button class="btn btn-success btn-small" onclick="GoodsManager.deliverItem('${item.xyGoodId}')">
-                            ✓ 发货
-                        </button>
                         <button class="btn btn-danger btn-small" onclick="GoodsManager.deleteItem('${item.xyGoodId}', '${item.xianyuAccountId}')">
                             删除
                         </button>

@@ -23,8 +23,6 @@ const GoodsPage = {
                 <div class="card-header">
                     <h2 class="card-title">商品列表</h2>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-outline btn-small" onclick="GoodsManager.showBatchConfig()">批量配置</button>
-                        <button class="btn btn-outline btn-small" onclick="GoodsManager.exportGoods()">导出数据</button>
                     </div>
                 </div>
                 <div id="goodsList" class="empty-state">
