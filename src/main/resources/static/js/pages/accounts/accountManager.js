@@ -5,11 +5,16 @@ const AccountManager = {
     // 加载账号列表
     async loadAccounts() {
         try {
+            console.log('开始加载账号列表');
             const response = await API.account.list();
+            console.log('账号列表API响应:', response);
+            
             if (response.code === 200 && response.data && response.data.accounts) {
+                console.log('账号列表数据:', response.data.accounts);
                 this.currentAccounts = response.data.accounts;
                 this.renderAccountList(response.data.accounts);
             } else {
+                console.error('账号列表响应格式不正确:', response);
                 throw new Error(response.msg || '获取账号列表失败');
             }
         } catch (error) {
@@ -21,7 +26,7 @@ const AccountManager = {
     // 渲染账号列表
     renderAccountList(accounts) {
         const container = document.getElementById('accountList');
-        container.className = '';
+        container.className = 'account-list-container'; // 添加容器类名
         
         // 确保accounts是一个数组
         if (!Array.isArray(accounts) || accounts.length === 0) {
@@ -36,35 +41,37 @@ const AccountManager = {
         
         // 使用表格形式展示账号列表
         container.innerHTML = `
-            <table class="account-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>UNB</th>
-                        <th>账号备注</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>更新时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${accounts.map(account => `
+            <div class="account-table-wrapper">
+                <table class="account-table">
+                    <thead>
                         <tr>
-                            <td>${account.id}</td>
-                            <td>${account.unb || '-'}</td>
-                            <td>${account.accountNote || '未命名账号'}</td>
-                            <td><span class="${account.status === 1 ? 'account-status-active' : 'account-status-inactive'}">${account.status === 1 ? '正常' : '异常'}</span></td>
-                            <td>${account.createdTime || '-'}</td>
-                            <td>${account.updatedTime || '-'}</td>
-                            <td>
-                                <button class="btn btn-outline btn-small" onclick="AccountManager.editAccount(${account.id})">编辑</button>
-                                <button class="btn btn-danger btn-small" onclick="AccountManager.showDeleteConfirmModal(${account.id})">删除</button>
-                            </td>
+                            <th>ID</th>
+                            <th>UNB</th>
+                            <th>账号备注</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>操作</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        ${accounts.map(account => `
+                            <tr>
+                                <td>${account.id}</td>
+                                <td>${account.unb || '-'}</td>
+                                <td>${account.accountNote || '未命名账号'}</td>
+                                <td><span class="${account.status === 1 ? 'account-status-active' : 'account-status-inactive'}">${account.status === 1 ? '正常' : '异常'}</span></td>
+                                <td>${account.createdTime || '-'}</td>
+                                <td>${account.updatedTime || '-'}</td>
+                                <td>
+                                    <button class="btn btn-outline btn-small" onclick="AccountManager.editAccount(${account.id})">编辑</button>
+                                    <button class="btn btn-danger btn-small" onclick="AccountManager.showDeleteConfirmModal(${account.id})">删除</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
         `;
     },
     

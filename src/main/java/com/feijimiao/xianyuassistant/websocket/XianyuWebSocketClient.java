@@ -210,8 +210,7 @@ public class XianyuWebSocketClient extends WebSocketClient {
                                                         Long accountIdLong = Long.parseLong(accountId);
                                                         chatMessageService.saveChatMessage(accountIdLong, decryptedData);
                                                     } catch (Exception e) {
-                                                        // 静默跳过，不记录错误日志
-                                                        log.debug("【账号{}】保存聊天消息异常: {}", accountId, e.getMessage());
+                                                        log.error("【账号{}】保存聊天消息异常: {}", accountId, e.getMessage(), e);
                                                     }
                                                 }
                                             }
@@ -423,7 +422,7 @@ public class XianyuWebSocketClient extends WebSocketClient {
             log.debug("【账号{}】已发送ACK确认: {}", accountId, ackJson);
             
         } catch (Exception e) {
-            log.debug("【账号{}】发送ACK失败: {}", accountId, e.getMessage());
+            log.error("【账号{}】发送ACK失败: {}", accountId, e.getMessage(), e);
             // ACK发送失败不影响消息处理，只记录日志
         }
     }

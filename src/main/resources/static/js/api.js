@@ -4,6 +4,7 @@ const API_BASE = '/api';
 // 通用请求方法
 async function request(url, options = {}) {
     try {
+        console.log('发送请求到:', url, options);
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
@@ -11,11 +12,20 @@ async function request(url, options = {}) {
             },
             ...options
         });
+        
+        console.log('收到响应状态:', response.status);
+        
+        // 检查响应状态
+        if (!response.ok) {
+            throw new Error(`HTTP错误! 状态: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('响应数据:', data);
         return data;
     } catch (error) {
         console.error('请求失败:', error);
-        return { code: -1, message: '网络请求失败' };
+        return { code: -1, message: '网络请求失败: ' + error.message };
     }
 }
 
@@ -99,6 +109,10 @@ const API = {
 console.log('API对象已加载:', API);
 console.log('API.items.updateAutoDeliveryStatus是否存在:', typeof API.items.updateAutoDeliveryStatus);
 console.log('API.items.updateAutoReplyStatus是否存在:', typeof API.items.updateAutoReplyStatus);
+console.log('API.websocket是否存在:', typeof API.websocket);
+console.log('API.websocket.start是否存在:', typeof API.websocket.start);
+console.log('API.websocket.stop是否存在:', typeof API.websocket.stop);
+console.log('API.websocket.status是否存在:', typeof API.websocket.status);
 
 // 工具函数
 const Utils = {

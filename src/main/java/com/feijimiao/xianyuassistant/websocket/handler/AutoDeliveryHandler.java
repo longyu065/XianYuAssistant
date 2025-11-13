@@ -137,7 +137,7 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
                 }
             }
         } catch (Exception e) {
-            log.debug("提取商品ID失败: url={}", url, e);
+            log.error("提取商品ID失败: url={}", url, e);
         }
         
         return null;

@@ -85,7 +85,7 @@ public class MessageSendHandler extends AbstractLwpHandler {
                                     params.setMessageText(getString(textMap, "text"));
                                 }
                             } catch (Exception e) {
-                                log.debug("解析custom.data失败: {}", e.getMessage());
+                                log.error("解析custom.data失败: {}", e.getMessage(), e);
                             }
                         }
                     }
@@ -251,7 +251,7 @@ public class MessageSendHandler extends AbstractLwpHandler {
         } catch (org.springframework.dao.DuplicateKeyException e) {
             log.debug("【账号{}】消息ID冲突，跳过保存", accountId);
         } catch (Exception e) {
-            log.debug("【账号{}】保存发送消息失败: {}", accountId, e.getMessage());
+            log.error("【账号{}】保存发送消息失败: {}", accountId, e.getMessage(), e);
         }
     }
     

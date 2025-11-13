@@ -149,20 +149,20 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                             accountId, pnmId, message.getContentType(), message.getMsgContent());
                     return true;
                 } else {
-                    log.debug("【账号{}】保存聊天消息失败: pnmId={}", accountId, pnmId);
+                    log.warn("【账号{}】保存聊天消息失败: pnmId={}", accountId, pnmId);
                     return false;
                 }
             } catch (org.springframework.dao.DuplicateKeyException e) {
                 log.debug("【账号{}】消息ID冲突，跳过保存: {}", accountId, pnmId);
                 return true;
             } catch (Exception e) {
-                log.debug("【账号{}】保存消息时发生异常，跳过: pnmId={}, error={}", 
-                        accountId, pnmId, e.getMessage());
-                return true;
+                log.error("【账号{}】保存消息时发生异常: pnmId={}, error={}", 
+                        accountId, pnmId, e.getMessage(), e);
+                return false;
             }
             
         } catch (Exception e) {
-            log.debug("【账号{}】处理聊天消息异常，跳过保存: {}", accountId, e.getMessage());
+            log.error("【账号{}】处理聊天消息异常: {}", accountId, e.getMessage(), e);
             return false;
         }
     }
@@ -309,20 +309,20 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                             accountId, lwp, pnmId, message.getContentType(), message.getMsgContent());
                     return true;
                 } else {
-                    log.debug("【账号{}】保存聊天消息失败: pnmId={}", accountId, pnmId);
+                    log.warn("【账号{}】保存聊天消息失败: pnmId={}", accountId, pnmId);
                     return false;
                 }
             } catch (org.springframework.dao.DuplicateKeyException e) {
                 log.debug("【账号{}】消息ID冲突，跳过保存: {}", accountId, pnmId);
                 return true;
             } catch (Exception e) {
-                log.debug("【账号{}】保存消息时发生异常，跳过: pnmId={}, error={}", 
-                        accountId, pnmId, e.getMessage());
-                return true;
+                log.error("【账号{}】保存消息时发生异常: pnmId={}, error={}", 
+                        accountId, pnmId, e.getMessage(), e);
+                return false;
             }
             
         } catch (Exception e) {
-            log.debug("【账号{}】处理聊天消息异常，跳过保存: {}", accountId, e.getMessage());
+            log.error("【账号{}】处理聊天消息异常: {}", accountId, e.getMessage(), e);
             return false;
         }
     }

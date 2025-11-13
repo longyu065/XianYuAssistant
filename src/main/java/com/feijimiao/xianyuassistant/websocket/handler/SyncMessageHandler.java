@@ -19,7 +19,7 @@ import java.util.Map;
 @Component
 public class SyncMessageHandler extends AbstractLwpHandler {
     
-    @Autowired(required = false)
+    @Autowired
     private ChatMessageService chatMessageService;
     
     @Override
@@ -69,7 +69,9 @@ public class SyncMessageHandler extends AbstractLwpHandler {
         // 获取lwp字段
         String lwp = getString(messageData, "lwp");
         
-        log.info("【账号{}】处理同步包，包含 {} 条消息, lwp={}", accountId, syncParams.getMessageCount(), lwp);
+        log.info("【账号{}】处理同步包，包含 {} 条消息, lwp={}, ChatMessageService状态: {}", 
+                accountId, syncParams.getMessageCount(), lwp, 
+                chatMessageService != null ? "已注入" : "未注入");
         
         // 处理每条加密消息
         for (int i = 0; i < syncParams.getDataList().size(); i++) {
@@ -111,15 +113,19 @@ public class SyncMessageHandler extends AbstractLwpHandler {
      * 保存消息到数据库
      */
     private void saveMessage(String accountId, String decryptedData, String lwp) {
+        log.info("【账号{}】开始保存消息: lwp={}, 数据长度={}", accountId, lwp, decryptedData != null ? decryptedData.length() : 0);
+        
         if (chatMessageService == null) {
+            log.warn("【账号{}】ChatMessageService未注入，无法保存消息", accountId);
             return;
         }
         
         try {
             Long accountIdLong = Long.parseLong(accountId);
-            chatMessageService.saveChatMessageWithLwp(accountIdLong, decryptedData, lwp);
+            boolean saved = chatMessageService.saveChatMessageWithLwp(accountIdLong, decryptedData, lwp);
+            log.info("【账号{}】消息保存结果: {}, lwp={}", accountId, saved ? "成功" : "失败", lwp);
         } catch (Exception e) {
-            log.debug("【账号{}】保存消息失败: {}", accountId, e.getMessage());
+            log.error("【账号{}】保存消息异常: lwp={}, error={}", accountId, lwp, e.getMessage(), e);
         }
     }
     

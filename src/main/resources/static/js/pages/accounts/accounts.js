@@ -10,7 +10,7 @@ const AccountsPage = {
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card account-card">
                 <div class="card-header">
                     <h2 class="card-title">闲鱼账号列表</h2>
                 </div>

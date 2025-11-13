@@ -24,12 +24,14 @@ const PageManager = {
 
     // 加载页面
     loadPage(page) {
+        console.log('加载页面:', page);
         this.currentPage = page;
         const content = document.getElementById('mainContent');
         
         // 根据页面类型加载对应模块
         switch(page) {
             case 'dashboard':
+                console.log('加载仪表板页面，ConnectionPage是否存在:', typeof ConnectionPage);
                 if (typeof DashboardPage !== 'undefined') {
                     DashboardPage.render(content);
                 } else {
@@ -39,6 +41,15 @@ const PageManager = {
             case 'accounts':
                 if (typeof AccountsPage !== 'undefined') {
                     AccountsPage.render(content);
+                } else {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">页面模块未加载</div></div>';
+                }
+                break;
+            case 'connection':
+                console.log('加载连接管理页面，ConnectionPage是否存在:', typeof ConnectionPage);
+                if (typeof ConnectionPage !== 'undefined') {
+                    console.log('ConnectionPage对象:', ConnectionPage);
+                    ConnectionPage.render(content);
                 } else {
                     content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">页面模块未加载</div></div>';
                 }

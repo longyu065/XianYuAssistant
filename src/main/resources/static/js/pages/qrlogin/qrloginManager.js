@@ -10,7 +10,7 @@ const QRLoginManager = {
             container.innerHTML = '<div class="loading">生成中...</div>';
             
             const response = await API.qrlogin.generate();
-            if (response.code === 0 && response.data) {
+            if (response.code === 200 && response.data) {
                 this.sessionId = response.data.sessionId;
                 const qrCodeUrl = response.data.qrCodeUrl;
                 
@@ -50,7 +50,7 @@ const QRLoginManager = {
             const response = await API.qrlogin.status(this.sessionId);
             const statusContainer = document.getElementById('loginStatus');
             
-            if (response.code === 0 && response.data) {
+            if (response.code === 200 && response.data) {
                 const status = response.data.status;
                 
                 if (status === 'SCANNED') {
@@ -81,7 +81,7 @@ const QRLoginManager = {
     async getCookies() {
         try {
             const response = await API.qrlogin.cookies(this.sessionId);
-            if (response.code === 0 && response.data) {
+            if (response.code === 200 && response.data) {
                 console.log('获取到Cookie:', response.data);
                 // TODO: 保存Cookie到账号
             }

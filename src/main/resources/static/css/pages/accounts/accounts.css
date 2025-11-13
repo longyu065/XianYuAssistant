@@ -1,5 +1,18 @@
 /* 账号管理页面样式 */
 
+/* 账号列表容器 */
+.account-list-container {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 账号表格包装器 */
+.account-table-wrapper {
+    height: 100%;
+    overflow: auto;
+    position: relative;
+}
+
 /* 账号表格特定样式 */
 .account-table {
     width: 100%;
@@ -8,6 +21,7 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    min-width: 800px; /* 确保表格最小宽度 */
 }
 
 .account-table th {
@@ -78,4 +92,15 @@
 .account-table th:nth-child(7),
 .account-table td:nth-child(7) {
     width: 160px;
+}
+
+/* 响应式处理 */
+@media (max-width: 768px) {
+    .account-table-wrapper {
+        overflow-x: auto;
+    }
+    
+    .account-table {
+        min-width: 600px;
+    }
 }

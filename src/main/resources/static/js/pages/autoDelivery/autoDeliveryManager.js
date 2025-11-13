@@ -6,7 +6,7 @@ const AutoDeliveryManager = {
     async loadAccountSelect() {
         try {
             const response = await API.account.list();
-            if (response.code === 0 && response.data) {
+            if (response.code === 200 && response.data) {
                 const select = document.getElementById('deliveryAccountSelect');
                 if (select) {
                     select.innerHTML = '<option value="">选择账号</option>' +

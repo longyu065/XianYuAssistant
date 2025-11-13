@@ -110,6 +110,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "m_h5_tk VARCHAR(500), " +
             "cookie_status TINYINT DEFAULT 1, " +
             "expire_time DATETIME, " +
+            "websocket_token TEXT, " +
+            "token_expire_time INTEGER, " +
             "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
@@ -148,6 +150,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "sender_app_v VARCHAR(50), " +
             "sender_os_type VARCHAR(20), " +
             "reminder_url TEXT, " +
+            "xy_goods_id VARCHAR(100), " +
             "complete_msg TEXT NOT NULL, " +
             "message_time BIGINT, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
@@ -189,8 +192,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "xianyu_account_id BIGINT NOT NULL, " +
             "xianyu_goods_id BIGINT, " +
             "xy_goods_id VARCHAR(100) NOT NULL, " +
-            "buyer_name VARCHAR(100), " +
-            "delivery_content TEXT, " +
+            "content TEXT, " +
             "state TINYINT DEFAULT 0, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
@@ -258,6 +260,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         // xianyu_cookie 表需要的字段
         List<ColumnDef> cookieColumns = new ArrayList<>();
         cookieColumns.add(new ColumnDef("m_h5_tk", "VARCHAR(500)", "ALTER TABLE xianyu_cookie ADD COLUMN m_h5_tk VARCHAR(500)"));
+        cookieColumns.add(new ColumnDef("websocket_token", "TEXT", "ALTER TABLE xianyu_cookie ADD COLUMN websocket_token TEXT"));
+        cookieColumns.add(new ColumnDef("token_expire_time", "INTEGER", "ALTER TABLE xianyu_cookie ADD COLUMN token_expire_time INTEGER"));
         tableColumns.put("xianyu_cookie", cookieColumns);
         
         // xianyu_goods 表需要的字段
@@ -266,10 +270,14 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         goodsColumns.add(new ColumnDef("xianyu_account_id", "BIGINT", "ALTER TABLE xianyu_goods ADD COLUMN xianyu_account_id BIGINT"));
         tableColumns.put("xianyu_goods", goodsColumns);
         
+        // xianyu_chat_message 表需要的字段
+        List<ColumnDef> chatMessageColumns = new ArrayList<>();
+        chatMessageColumns.add(new ColumnDef("xy_goods_id", "VARCHAR(100)", "ALTER TABLE xianyu_chat_message ADD COLUMN xy_goods_id VARCHAR(100)"));
+        tableColumns.put("xianyu_chat_message", chatMessageColumns);
+        
         // xianyu_goods_auto_delivery_record 表需要的字段
         List<ColumnDef> deliveryRecordColumns = new ArrayList<>();
-        deliveryRecordColumns.add(new ColumnDef("buyer_name", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN buyer_name VARCHAR(100)"));
-        deliveryRecordColumns.add(new ColumnDef("delivery_content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN delivery_content TEXT"));
+        deliveryRecordColumns.add(new ColumnDef("content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN content TEXT"));
         tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
         
         int addedCount = 0;
@@ -328,6 +336,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE INDEX IF NOT EXISTS idx_cookie_account_id ON xianyu_cookie(xianyu_account_id)");
         requiredIndexes.put("idx_cookie_status",
             "CREATE INDEX IF NOT EXISTS idx_cookie_status ON xianyu_cookie(cookie_status)");
+        requiredIndexes.put("idx_token_expire_time",
+            "CREATE INDEX IF NOT EXISTS idx_token_expire_time ON xianyu_cookie(token_expire_time)");
         requiredIndexes.put("idx_goods_xy_good_id",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods(xy_good_id)");
         requiredIndexes.put("idx_goods_status",
@@ -348,6 +358,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE INDEX IF NOT EXISTS idx_chat_message_content_type ON xianyu_chat_message(content_type)");
         requiredIndexes.put("idx_chat_message_time",
             "CREATE INDEX IF NOT EXISTS idx_chat_message_time ON xianyu_chat_message(message_time)");
+        requiredIndexes.put("idx_chat_message_goods_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_goods_id ON xianyu_chat_message(xy_goods_id)");
         requiredIndexes.put("idx_chat_message_unique",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_message_unique ON xianyu_chat_message(xianyu_account_id, pnm_id)");
         

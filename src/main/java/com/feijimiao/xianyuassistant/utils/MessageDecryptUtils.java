@@ -102,7 +102,7 @@ public class MessageDecryptUtils {
             String decrypted = decrypt(message);
             return decrypted != null ? decrypted : message;
         } catch (Exception e) {
-            log.debug("消息解密失败，返回原始消息: {}", e.getMessage());
+            log.error("消息解密失败，返回原始消息: {}", e.getMessage(), e);
             return message;
         }
     }
