@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feijimiao.xianyuassistant.entity.XianyuCookie;
 import com.feijimiao.xianyuassistant.exception.CaptchaRequiredException;
 import com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper;
-import com.feijimiao.xianyuassistant.service.PlaywrightCaptchaService;
+
 import com.feijimiao.xianyuassistant.service.WebSocketTokenService;
 import com.feijimiao.xianyuassistant.utils.HttpClientUtils;
 import com.feijimiao.xianyuassistant.utils.XianyuSignUtils;
@@ -26,9 +26,6 @@ import java.util.Map;
 public class WebSocketTokenServiceImpl implements WebSocketTokenService {
 
     @Autowired
-    private PlaywrightCaptchaService playwrightCaptchaService;
-    
-    @Autowired
     private XianyuCookieMapper xianyuCookieMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -43,9 +40,42 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
      */
     private static final long TOKEN_VALID_DURATION = 20 * 60 * 60 * 1000; // 20小时
     
+    /**
+     * 记录正在等待验证的账号和验证URL
+     * Key: accountId, Value: captchaUrl
+     */
+    private final Map<Long, String> pendingCaptchaAccounts = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    /**
+     * 记录验证URL的创建时间，用于超时清理
+     * Key: accountId, Value: timestamp
+     */
+    private final Map<Long, Long> captchaTimestamps = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    /**
+     * 验证URL有效期（5分钟）
+     */
+    private static final long CAPTCHA_TIMEOUT = 5 * 60 * 1000;
+    
     @Override
     public String getAccessToken(Long accountId, String cookiesStr, String deviceId) {
         try {
+            // 0. 检查是否正在等待验证
+            if (pendingCaptchaAccounts.containsKey(accountId)) {
+                Long timestamp = captchaTimestamps.get(accountId);
+                if (timestamp != null && System.currentTimeMillis() - timestamp < CAPTCHA_TIMEOUT) {
+                    // 仍在等待验证，直接抛出异常，不重复请求
+                    String captchaUrl = pendingCaptchaAccounts.get(accountId);
+                    log.debug("【账号{}】正在等待滑块验证，跳过重复请求", accountId);
+                    throw new CaptchaRequiredException(captchaUrl);
+                } else {
+                    // 验证超时，清除记录，允许重新请求
+                    log.info("【账号{}】验证超时，清除等待状态", accountId);
+                    pendingCaptchaAccounts.remove(accountId);
+                    captchaTimestamps.remove(accountId);
+                }
+            }
+            
             // 1. 先从数据库检查是否有有效的 Token
             XianyuCookie cookieEntity = xianyuCookieMapper.selectOne(
                     new LambdaQueryWrapper<XianyuCookie>()
@@ -59,6 +89,9 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
                     long remainingHours = (cookieEntity.getTokenExpireTime() - now) / (60 * 60 * 1000);
                     log.info("【账号{}】使用数据库中的accessToken（剩余有效期: {}小时）", 
                             accountId, remainingHours);
+                    // 清除等待验证状态（如果有）
+                    pendingCaptchaAccounts.remove(accountId);
+                    captchaTimestamps.remove(accountId);
                     return cookieEntity.getWebsocketToken();
                 } else {
                     log.info("【账号{}】数据库中的Token已过期，需要重新获取", accountId);
@@ -143,8 +176,16 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
                 fullUrl = fullUrl.substring(0, fullUrl.length() - 1);
             }
             
+            // 打印请求信息
+            log.info("【账号{}】============", accountId);
+            log.info("【账号{}】1、请求体: {}", accountId, data);
+            log.info("【账号{}】2、发送POST请求: {}", accountId, fullUrl);
+            
             // 9. 发送POST请求
             String response = HttpClientUtils.post(fullUrl, headers, data);
+            
+            log.info("【账号{}】3、响应内容: {}", accountId, response);
+            log.info("【账号{}】============", accountId);
             
             if (response == null || response.isEmpty()) {
                 log.error("【账号{}】获取accessToken失败：响应为空", accountId);
@@ -154,8 +195,6 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
             // 10. 解析响应
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
-            
-            log.info("【账号{}】Token API响应: {}", accountId, response);
             
             // 检查ret字段
             Object retObj = responseMap.get("ret");
@@ -194,28 +233,15 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
                     
                     if (dataMap != null && dataMap.containsKey("url")) {
                         String captchaUrl = (String) dataMap.get("url");
+                        
+                        // 记录等待验证状态
+                        pendingCaptchaAccounts.put(accountId, captchaUrl);
+                        captchaTimestamps.put(accountId, System.currentTimeMillis());
+                        
                         log.warn("【账号{}】检测到滑块验证，URL: {}", accountId, captchaUrl);
+                        log.warn("【账号{}】需要人工完成滑块验证，请访问: http://localhost:8080/websocket-manual-captcha.html", accountId);
                         
-                        // 尝试使用Playwright自动处理
-                        if (playwrightCaptchaService.isPlaywrightAvailable()) {
-                            log.info("【账号{}】尝试使用Playwright自动处理滑块验证...", accountId);
-                            String playwrightToken = playwrightCaptchaService.handleCaptchaAndGetToken(
-                                    accountId, cookiesStr, deviceId, captchaUrl);
-                            
-                            if (playwrightToken != null && !playwrightToken.isEmpty()) {
-                                // 保存 token 到数据库
-                                saveTokenToDatabase(accountId, playwrightToken);
-                                log.info("【账号{}】✅ Playwright自动处理成功，已获取并保存Token到数据库", accountId);
-                                return playwrightToken;
-                            } else {
-                                log.warn("【账号{}】Playwright自动处理失败，回退到手动模式", accountId);
-                            }
-                        } else {
-                            log.warn("【账号{}】Playwright不可用，使用手动模式", accountId);
-                        }
-                        
-                        // 如果Playwright失败或不可用，抛出异常让用户手动处理
-                        log.warn("【账号{}】抛出滑块验证异常，需要手动处理", accountId);
+                        // 抛出异常让用户手动处理
                         throw new CaptchaRequiredException(captchaUrl);
                     } else {
                         log.error("【账号{}】需要滑块验证但未找到URL", accountId);
@@ -238,6 +264,32 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
     @Override
     public void saveToken(Long accountId, String token) {
         saveTokenToDatabase(accountId, token);
+    }
+    
+    @Override
+    public void clearToken(Long accountId) {
+        try {
+            log.info("【账号{}】清除数据库中的Token缓存", accountId);
+            
+            // 将Token过期时间设置为0，强制下次重新获取
+            xianyuCookieMapper.update(null,
+                    new LambdaUpdateWrapper<XianyuCookie>()
+                            .eq(XianyuCookie::getXianyuAccountId, accountId)
+                            .set(XianyuCookie::getTokenExpireTime, 0L)
+            );
+            
+            log.info("【账号{}】Token缓存已清除", accountId);
+        } catch (Exception e) {
+            log.error("【账号{}】清除Token缓存失败", accountId, e);
+        }
+    }
+    
+    @Override
+    public void clearCaptchaWait(Long accountId) {
+        log.info("【账号{}】清除验证等待状态", accountId);
+        pendingCaptchaAccounts.remove(accountId);
+        captchaTimestamps.remove(accountId);
+        log.info("【账号{}】验证等待状态已清除", accountId);
     }
     
     /**

@@ -24,4 +24,16 @@ public interface WebSocketTokenService {
      * @param token accessToken
      */
     void saveToken(Long accountId, String token);
+    
+    /**
+     * 清除Token缓存（强制刷新）
+     * 
+     * @param accountId 账号ID
+     */
+    void clearToken(Long accountId);
+    
+    /**
+     * 清除验证等待状态
+     */
+    void clearCaptchaWait(Long accountId);
 }

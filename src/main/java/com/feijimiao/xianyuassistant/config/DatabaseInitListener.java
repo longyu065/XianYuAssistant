@@ -138,26 +138,19 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE TABLE xianyu_chat_message (" +
             "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
             "xianyu_account_id BIGINT NOT NULL, " +
-            "session_id VARCHAR(100), " +
-            "message_id VARCHAR(100) NOT NULL, " +
-            "message_type INTEGER DEFAULT 1, " +
-            "direction TINYINT NOT NULL, " +
+            "lwp VARCHAR(50), " +
+            "pnm_id VARCHAR(100) NOT NULL, " +
+            "s_id VARCHAR(100), " +
+            "content_type INTEGER, " +
+            "msg_content TEXT, " +
+            "sender_user_name VARCHAR(200), " +
             "sender_user_id VARCHAR(100), " +
-            "sender_nickname VARCHAR(200), " +
-            "receiver_user_id VARCHAR(100), " +
-            "receiver_nickname VARCHAR(200), " +
-            "content_type INTEGER DEFAULT 1, " +
-            "content_text TEXT, " +
-            "content_json TEXT, " +
-            "item_id VARCHAR(100), " +
-            "item_title VARCHAR(500), " +
-            "is_read TINYINT DEFAULT 0, " +
-            "read_time DATETIME, " +
-            "raw_data TEXT, " +
-            "extra_info TEXT, " +
+            "sender_app_v VARCHAR(50), " +
+            "sender_os_type VARCHAR(20), " +
+            "reminder_url TEXT, " +
+            "complete_msg TEXT NOT NULL, " +
             "message_time BIGINT, " +
-            "created_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-            "updated_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+            "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
         
@@ -267,24 +260,18 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         // 聊天消息表索引
         requiredIndexes.put("idx_chat_message_account_id",
             "CREATE INDEX IF NOT EXISTS idx_chat_message_account_id ON xianyu_chat_message(xianyu_account_id)");
-        requiredIndexes.put("idx_chat_message_session_id",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_session_id ON xianyu_chat_message(session_id)");
-        requiredIndexes.put("idx_chat_message_message_id",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_message_id ON xianyu_chat_message(message_id)");
-        requiredIndexes.put("idx_chat_message_direction",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_direction ON xianyu_chat_message(direction)");
+        requiredIndexes.put("idx_chat_message_pnm_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_pnm_id ON xianyu_chat_message(pnm_id)");
+        requiredIndexes.put("idx_chat_message_s_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_s_id ON xianyu_chat_message(s_id)");
+        requiredIndexes.put("idx_chat_message_sender_user_id",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_sender_user_id ON xianyu_chat_message(sender_user_id)");
+        requiredIndexes.put("idx_chat_message_content_type",
+            "CREATE INDEX IF NOT EXISTS idx_chat_message_content_type ON xianyu_chat_message(content_type)");
         requiredIndexes.put("idx_chat_message_time",
             "CREATE INDEX IF NOT EXISTS idx_chat_message_time ON xianyu_chat_message(message_time)");
-        requiredIndexes.put("idx_chat_message_sender",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_sender ON xianyu_chat_message(sender_user_id)");
-        requiredIndexes.put("idx_chat_message_receiver",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_receiver ON xianyu_chat_message(receiver_user_id)");
-        requiredIndexes.put("idx_chat_message_item_id",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_item_id ON xianyu_chat_message(item_id)");
-        requiredIndexes.put("idx_chat_message_is_read",
-            "CREATE INDEX IF NOT EXISTS idx_chat_message_is_read ON xianyu_chat_message(is_read)");
         requiredIndexes.put("idx_chat_message_unique",
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_message_unique ON xianyu_chat_message(xianyu_account_id, message_id)");
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_message_unique ON xianyu_chat_message(xianyu_account_id, pnm_id)");
         
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {

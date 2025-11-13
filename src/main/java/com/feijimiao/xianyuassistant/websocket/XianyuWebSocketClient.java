@@ -46,6 +46,9 @@ public class XianyuWebSocketClient extends WebSocketClient {
     
     // 注册成功回调
     private Runnable onRegistrationSuccess;
+    
+    // Token失效回调
+    private Runnable onTokenExpired;
 
     public XianyuWebSocketClient(URI serverUri, Map<String, String> headers, String accountId) {
         super(serverUri, headers);
@@ -78,6 +81,13 @@ public class XianyuWebSocketClient extends WebSocketClient {
      */
     public void setMyUserId(String userId) {
         this.myUserId = userId;
+    }
+    
+    /**
+     * 设置Token失效回调
+     */
+    public void setOnTokenExpired(Runnable callback) {
+        this.onTokenExpired = callback;
     }
 
     @Override
@@ -240,6 +250,25 @@ public class XianyuWebSocketClient extends WebSocketClient {
                 // 检查是否是心跳响应（参考Python的handle_heartbeat_response）
                 // Python中心跳响应的判断是 code == 200
                 Object code = messageData.get("code");
+                
+                // 检查是否是401错误（Token失效）
+                if (code != null && (code.equals(401) || "401".equals(code.toString()))) {
+                    log.error("【账号{}】❌ Token失效(401)，需要重新获取Token并重连", accountId);
+                    
+                    // 触发Token失效回调
+                    if (onTokenExpired != null) {
+                        try {
+                            log.info("【账号{}】触发Token失效回调，准备重新获取Token...", accountId);
+                            onTokenExpired.run();
+                        } catch (Exception e) {
+                            log.error("【账号{}】Token失效回调执行失败", accountId, e);
+                        }
+                    } else {
+                        log.warn("【账号{}】未设置Token失效回调，无法自动重连", accountId);
+                    }
+                    return; // 不再继续处理
+                }
+                
                 if (code != null && (code.equals(200) || "200".equals(code.toString()))) {
                     handleHeartbeatResponse();
                     // 心跳响应也要继续处理，不要return

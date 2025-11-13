@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket连接 - 人工滑块验证</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .result-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .result-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .result-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        .result-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+
+        /* 滑块验证弹窗 */
+        .captcha-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .captcha-modal.show {
+            display: flex;
+        }
+
+        .captcha-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1000px;
+            height: 80%;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .captcha-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .captcha-header h3 {
+            font-size: 18px;
+        }
+
+        .captcha-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .captcha-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .captcha-body {
+            flex: 1;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+
+
+        .captcha-tips {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .captcha-tips h4 {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .captcha-tips ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h4 {
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-box p {
+            color: #1e3a8a;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 WebSocket连接 - 人工滑块验证</h1>
+            <p>支持人工完成滑块验证，更稳定可靠</p>
+        </div>
+
+        <div class="content">
+            <!-- 连接状态 -->
+            <div class="section">
+                <div class="section-title">启动WebSocket连接</div>
+                
+                <div class="info-box">
+                    <h4>💡 使用说明</h4>
+                    <p>
+                        如果遇到滑块验证，系统会自动弹出验证窗口。<br>
+                        请在弹窗中完成滑块验证，验证成功后会自动继续连接流程。
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label>账号ID *</label>
+                    <input type="number" id="accountId" placeholder="输入账号ID" value="1">
+                </div>
+
+                <button class="btn btn-primary" onclick="startWebSocket()">
+                    启动WebSocket连接
+                </button>
+
+                <div id="result" class="result-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 滑块验证弹窗 -->
+    <div id="captchaModal" class="captcha-modal">
+        <div class="captcha-content">
+            <div class="captcha-header">
+                <h3>🔐 请完成滑块验证</h3>
+                <button class="captcha-close" onclick="closeCaptchaModal()">×</button>
+            </div>
+            <div class="captcha-body">
+                <div class="captcha-tips">
+                    <h4>📝 操作步骤：</h4>
+                    <ol>
+                        <li>点击下方的"打开验证页面"按钮，在新标签页中打开验证页面</li>
+                        <li>在新标签页中完成滑块验证</li>
+                        <li>验证成功后，回到本页面，点击"验证完成，继续连接"按钮</li>
+                    </ol>
+                </div>
+                <div style="text-align: center; padding: 40px 20px;">
+                    <p style="color: #666; margin-bottom: 20px;">验证链接已准备好</p>
+                    <button class="btn btn-primary" onclick="openCaptchaInNewTab()" style="width: auto; padding: 12px 40px; margin-bottom: 15px;">
+                        🔗 打开验证页面
+                    </button>
+                    <br>
+                    <button class="btn btn-success" onclick="continueAfterCaptcha()" style="width: auto; padding: 12px 40px;">
+                        ✅ 验证完成，继续连接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/websocket';
+        let checkInterval = null;
+        let currentAccountId = null;
+
+        // 启动WebSocket连接
+        async function startWebSocket() {
+            const accountId = document.getElementById('accountId').value;
+            const resultDiv = document.getElementById('result');
+
+            if (!accountId) {
+                showResult(resultDiv, 'error', '请输入账号ID');
+                return;
+            }
+
+            currentAccountId = accountId;
+            showResult(resultDiv, 'info', '正在启动WebSocket连接...');
+
+            try {
+                const response = await fetch(`${API_BASE}/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        xianyuAccountId: parseInt(accountId)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    showResult(resultDiv, 'success', '✅ ' + result.message);
+                } else if (result.code === 500 && result.data && result.data.needCaptcha) {
+                    // 需要滑块验证
+                    showResult(resultDiv, 'warning', '⚠️ 需要完成滑块验证，正在打开验证窗口...');
+                    
+                    // 显示滑块验证弹窗
+                    showCaptchaModal(result.data.captchaUrl);
+                } else {
+                    showResult(resultDiv, 'error', '❌ ' + result.message);
+                }
+            } catch (error) {
+                showResult(resultDiv, 'error', '请求失败: ' + error.message);
+            }
+        }
+
+        let currentCaptchaUrl = '';
+        
+        // 显示滑块验证弹窗
+        function showCaptchaModal(captchaUrl) {
+            const modal = document.getElementById('captchaModal');
+            
+            // 保存验证URL
+            currentCaptchaUrl = captchaUrl;
+            
+            // 显示弹窗
+            modal.classList.add('show');
+        }
+        
+        // 在新标签页打开验证页面
+        function openCaptchaInNewTab() {
+            if (currentCaptchaUrl) {
+                window.open(currentCaptchaUrl, '_blank');
+            }
+        }
+
+        // 关闭滑块验证弹窗
+        function closeCaptchaModal() {
+            const modal = document.getElementById('captchaModal');
+            
+            // 隐藏弹窗
+            modal.classList.remove('show');
+            
+            // 清空URL
+            currentCaptchaUrl = '';
+        }
+        
+        // 用户完成验证后，手动点击继续
+        async function continueAfterCaptcha() {
+            const resultDiv = document.getElementById('result');
+            
+            showResult(resultDiv, 'info', '⏳ 正在验证并连接...');
+            
+            try {
+                // 尝试重新连接
+                const response = await fetch(`${API_BASE}/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        xianyuAccountId: parseInt(currentAccountId)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    // 验证成功，连接已建立
+                    showResult(resultDiv, 'success', '✅ 滑块验证成功！WebSocket连接已建立');
+                    closeCaptchaModal();
+                } else if (result.code === 500 && result.data && result.data.needCaptcha) {
+                    // 仍然需要验证
+                    showResult(resultDiv, 'warning', '⚠️ 验证可能未完成，请确保已完成滑块验证后再试');
+                } else {
+                    // 其他错误
+                    showResult(resultDiv, 'error', '❌ ' + result.message);
+                    closeCaptchaModal();
+                }
+            } catch (error) {
+                showResult(resultDiv, 'error', '请求失败: ' + error.message);
+            }
+        }
+
+
+
+        // 显示结果
+        function showResult(element, type, message) {
+            element.className = `result-box result-${type}`;
+            element.innerHTML = message;
+            element.style.display = 'block';
+        }
+
+
+    </script>
+</body>
+</html>

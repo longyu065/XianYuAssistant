@@ -44,4 +44,14 @@ public interface ChatMessageService {
      * @return 消息列表
      */
     List<XianyuChatMessage> getMessagesBySessionId(String sessionId);
+    
+    /**
+     * 保存聊天消息（带lwp字段）
+     * 
+     * @param accountId 账号ID
+     * @param decryptedData 解密后的消息数据
+     * @param lwp WebSocket消息路径
+     * @return 是否保存成功
+     */
+    boolean saveChatMessageWithLwp(Long accountId, String decryptedData, String lwp);
 }

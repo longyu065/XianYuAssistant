@@ -18,6 +18,9 @@ public class WebSocketController {
 
     @Autowired
     private WebSocketService webSocketService;
+    
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
 
     /**
      * 启动WebSocket连接
@@ -52,7 +55,7 @@ public class WebSocketController {
             }
             
         } catch (com.feijimiao.xianyuassistant.exception.CaptchaRequiredException e) {
-            log.warn("需要滑块验证", e);
+            log.debug("需要滑块验证: accountId={}, url={}", reqDTO.getXianyuAccountId(), e.getCaptchaUrl());
             CaptchaInfoDTO captchaInfo = new CaptchaInfoDTO();
             captchaInfo.setNeedCaptcha(true);
             captchaInfo.setCaptchaUrl(e.getCaptchaUrl());
@@ -163,6 +166,31 @@ public class WebSocketController {
         } catch (Exception e) {
             log.error("查询WebSocket状态失败", e);
             return ResultObject.failed("查询WebSocket状态失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 清除验证等待状态
+     */
+    @PostMapping("/clearCaptchaWait")
+    public ResultObject<String> clearCaptchaWait(@RequestBody WebSocketReqDTO reqDTO) {
+        try {
+            log.info("清除验证等待状态: xianyuAccountId={}", reqDTO.getXianyuAccountId());
+            
+            if (reqDTO.getXianyuAccountId() == null) {
+                return ResultObject.failed("账号ID不能为空");
+            }
+            
+            // 调用tokenService清除等待状态
+            com.feijimiao.xianyuassistant.service.WebSocketTokenService tokenService = 
+                    applicationContext.getBean(com.feijimiao.xianyuassistant.service.WebSocketTokenService.class);
+            tokenService.clearCaptchaWait(reqDTO.getXianyuAccountId());
+            
+            return ResultObject.success("验证等待状态已清除，可以重新请求");
+            
+        } catch (Exception e) {
+            log.error("清除验证等待状态失败", e);
+            return ResultObject.failed("清除验证等待状态失败: " + e.getMessage());
         }
     }
 

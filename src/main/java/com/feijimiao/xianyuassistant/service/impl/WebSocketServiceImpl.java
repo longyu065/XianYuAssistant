@@ -209,6 +209,34 @@ public class WebSocketServiceImpl implements WebSocketService {
                 tokenService.saveToken(accountId, finalAccessToken);
                 log.info("【账号{}】✅ Token已成功保存到数据库", accountId);
             });
+            
+            // 设置Token失效回调（自动重连）
+            client.setOnTokenExpired(() -> {
+                log.warn("【账号{}】Token失效，开始自动重连流程...", accountId);
+                try {
+                    // 停止当前连接
+                    stopWebSocket(accountId);
+                    
+                    // 等待1秒
+                    Thread.sleep(1000);
+                    
+                    // 强制刷新Token（清除数据库中的无效token）
+                    log.info("【账号{}】强制刷新Token（清除数据库缓存）", accountId);
+                    tokenService.clearToken(accountId);
+                    
+                    // 重新启动连接（会自动刷新Token）
+                    log.info("【账号{}】重新启动WebSocket连接（自动刷新Token）", accountId);
+                    boolean success = startWebSocket(accountId);
+                    
+                    if (success) {
+                        log.info("【账号{}】✅ 自动重连成功", accountId);
+                    } else {
+                        log.error("【账号{}】❌ 自动重连失败", accountId);
+                    }
+                } catch (Exception e) {
+                    log.error("【账号{}】自动重连异常", accountId, e);
+                }
+            });
 
             // 连接WebSocket（参考Python的connect方法）
             log.info("正在连接WebSocket: {}", WEBSOCKET_URL);
