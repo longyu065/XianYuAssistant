@@ -9,7 +9,7 @@ import lombok.Data;
  * 闲鱼商品信息实体类
  */
 @Data
-@TableName("xianyu_goods_info")
+@TableName("xianyu_goods")
 public class XianyuGoodsInfo {
     
     /**

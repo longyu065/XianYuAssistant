@@ -11,7 +11,7 @@
 ```sql
 -- 查询商品信息
 SELECT xy_good_id, title, detail_url, detail_info, updated_time 
-FROM xianyu_goods_info 
+FROM xianyu_goods 
 LIMIT 5;
 ```
 
@@ -149,7 +149,7 @@ curl -X POST "http://localhost:8080/api/items/refresh" \
 
 # 1.2 查询数据库，获取商品ID
 # 在数据库工具中执行：
-# SELECT xy_good_id FROM xianyu_goods_info LIMIT 1;
+# SELECT xy_good_id FROM xianyu_goods LIMIT 1;
 ```
 
 ### 2. 测试获取详情
@@ -196,7 +196,7 @@ SELECT
     title,
     LENGTH(detail_info) as detail_length,
     updated_time
-FROM xianyu_goods_info
+FROM xianyu_goods
 WHERE xy_good_id = 'YOUR_ITEM_ID';
 ```
 
@@ -251,14 +251,14 @@ curl -X POST "http://localhost:8080/api/items/detail" \
 
 **方法1：清空数据库中的 detail_info**
 ```sql
-UPDATE xianyu_goods_info 
+UPDATE xianyu_goods 
 SET detail_info = NULL 
 WHERE xy_good_id = 'YOUR_ITEM_ID';
 ```
 
 **方法2：修改 updated_time 为25小时前**
 ```sql
-UPDATE xianyu_goods_info 
+UPDATE xianyu_goods 
 SET updated_time = datetime('now', '-25 hours') 
 WHERE xy_good_id = 'YOUR_ITEM_ID';
 ```

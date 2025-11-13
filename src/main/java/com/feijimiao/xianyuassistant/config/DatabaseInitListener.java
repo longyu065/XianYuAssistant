@@ -116,8 +116,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             ")");
         
         // 闲鱼商品信息表
-        requiredTables.put("xianyu_goods_info",
-            "CREATE TABLE xianyu_goods_info (" +
+        requiredTables.put("xianyu_goods",
+            "CREATE TABLE xianyu_goods (" +
             "id BIGINT PRIMARY KEY, " +
             "xy_good_id VARCHAR(100) NOT NULL, " +
             "xianyu_account_id BIGINT, " +
@@ -188,11 +188,11 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         cookieColumns.add(new ColumnDef("m_h5_tk", "VARCHAR(500)", "ALTER TABLE xianyu_cookie ADD COLUMN m_h5_tk VARCHAR(500)"));
         tableColumns.put("xianyu_cookie", cookieColumns);
         
-        // xianyu_goods_info 表需要的字段
+        // xianyu_goods 表需要的字段
         List<ColumnDef> goodsColumns = new ArrayList<>();
-        goodsColumns.add(new ColumnDef("detail_url", "TEXT", "ALTER TABLE xianyu_goods_info ADD COLUMN detail_url TEXT"));
-        goodsColumns.add(new ColumnDef("xianyu_account_id", "BIGINT", "ALTER TABLE xianyu_goods_info ADD COLUMN xianyu_account_id BIGINT"));
-        tableColumns.put("xianyu_goods_info", goodsColumns);
+        goodsColumns.add(new ColumnDef("detail_url", "TEXT", "ALTER TABLE xianyu_goods ADD COLUMN detail_url TEXT"));
+        goodsColumns.add(new ColumnDef("xianyu_account_id", "BIGINT", "ALTER TABLE xianyu_goods ADD COLUMN xianyu_account_id BIGINT"));
+        tableColumns.put("xianyu_goods", goodsColumns);
         
         int addedCount = 0;
         for (Map.Entry<String, List<ColumnDef>> entry : tableColumns.entrySet()) {
@@ -251,11 +251,11 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         requiredIndexes.put("idx_cookie_status",
             "CREATE INDEX IF NOT EXISTS idx_cookie_status ON xianyu_cookie(cookie_status)");
         requiredIndexes.put("idx_goods_xy_good_id",
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id)");
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods(xy_good_id)");
         requiredIndexes.put("idx_goods_status",
-            "CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status)");
+            "CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods(status)");
         requiredIndexes.put("idx_goods_account_id",
-            "CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods_info(xianyu_account_id)");
+            "CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods(xianyu_account_id)");
         
         // 聊天消息表索引
         requiredIndexes.put("idx_chat_message_account_id",
@@ -324,11 +324,11 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "BEGIN " +
             "UPDATE xianyu_cookie SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
             "END");
-        requiredTriggers.put("update_xianyu_goods_info_time",
-            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_info_time " +
-            "AFTER UPDATE ON xianyu_goods_info " +
+        requiredTriggers.put("update_xianyu_goods_time",
+            "CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_time " +
+            "AFTER UPDATE ON xianyu_goods " +
             "BEGIN " +
-            "UPDATE xianyu_goods_info SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
+            "UPDATE xianyu_goods SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id; " +
             "END");
         requiredTriggers.put("update_xianyu_chat_message_time",
             "CREATE TRIGGER IF NOT EXISTS update_xianyu_chat_message_time " +

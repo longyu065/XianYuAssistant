@@ -46,7 +46,7 @@ END
 $$
 
 -- 闲鱼商品信息表
-CREATE TABLE IF NOT EXISTS xianyu_goods_info (
+CREATE TABLE IF NOT EXISTS xianyu_goods (
     id BIGINT PRIMARY KEY,                        -- 表ID（使用雪花ID）
     xy_good_id VARCHAR(100) NOT NULL,             -- 闲鱼商品ID
     xianyu_account_id BIGINT,                     -- 关联的闲鱼账号ID
@@ -63,15 +63,15 @@ CREATE TABLE IF NOT EXISTS xianyu_goods_info (
 );
 
 -- 创建商品表索引
-CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id);
-CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status);
-CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods_info(xianyu_account_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods(xy_good_id);
+CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods(status);
+CREATE INDEX IF NOT EXISTS idx_goods_account_id ON xianyu_goods(xianyu_account_id);
 
 -- 创建商品表更新时间触发器
-CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_info_time 
-AFTER UPDATE ON xianyu_goods_info
+CREATE TRIGGER IF NOT EXISTS update_xianyu_goods_time
+AFTER UPDATE ON xianyu_goods
 BEGIN
-    UPDATE xianyu_goods_info SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE xianyu_goods SET updated_time = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END
 $
 

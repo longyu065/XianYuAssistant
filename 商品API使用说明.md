@@ -261,10 +261,10 @@ HttpClientUtils (HTTP客户端)
 
 ## 数据库表结构
 
-商品信息保存在 `xianyu_goods_info` 表中：
+商品信息保存在 `xianyu_goods` 表中：
 
 ```sql
-CREATE TABLE IF NOT EXISTS xianyu_goods_info (
+CREATE TABLE IF NOT EXISTS xianyu_goods (
     id BIGINT PRIMARY KEY,                        -- 表ID（使用雪花ID）
     xy_good_id VARCHAR(100) NOT NULL,             -- 闲鱼商品ID
     title VARCHAR(500),                           -- 商品标题
@@ -278,8 +278,8 @@ CREATE TABLE IF NOT EXISTS xianyu_goods_info (
     updated_time DATETIME DEFAULT CURRENT_TIMESTAMP   -- 更新时间
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods_info(xy_good_id);
-CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods_info(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_goods_xy_good_id ON xianyu_goods(xy_good_id);
+CREATE INDEX IF NOT EXISTS idx_goods_status ON xianyu_goods(status);
 ```
 
 **字段说明：**
