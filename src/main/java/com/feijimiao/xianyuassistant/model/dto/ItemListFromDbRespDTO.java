@@ -12,9 +12,14 @@ import java.util.List;
 public class ItemListFromDbRespDTO {
     
     /**
-     * 商品列表
+     * 商品列表（旧版，保留兼容性）
      */
     private List<XianyuGoodsInfo> items;
+    
+    /**
+     * 商品列表（包含配置信息）
+     */
+    private List<ItemWithConfigDTO> itemsWithConfig;
     
     /**
      * 商品总数

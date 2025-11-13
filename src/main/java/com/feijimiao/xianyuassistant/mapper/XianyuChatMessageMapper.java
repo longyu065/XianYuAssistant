@@ -18,12 +18,12 @@ public interface XianyuChatMessageMapper {
             "xianyu_account_id, lwp, pnm_id, s_id, " +
             "content_type, msg_content, " +
             "sender_user_name, sender_user_id, sender_app_v, sender_os_type, " +
-            "reminder_url, complete_msg, message_time" +
+            "reminder_url, xy_goods_id, complete_msg, message_time" +
             ") VALUES (" +
             "#{xianyuAccountId}, #{lwp}, #{pnmId}, #{sId}, " +
             "#{contentType}, #{msgContent}, " +
             "#{senderUserName}, #{senderUserId}, #{senderAppV}, #{senderOsType}, " +
-            "#{reminderUrl}, #{completeMsg}, #{messageTime}" +
+            "#{reminderUrl}, #{xyGoodsId}, #{completeMsg}, #{messageTime}" +
             ")")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(XianyuChatMessage message);

@@ -10,7 +10,12 @@ import lombok.Data;
 public class ItemDetailRespDTO {
     
     /**
-     * 商品信息
+     * 商品信息（旧版，保留兼容性）
      */
     private XianyuGoodsInfo item;
+    
+    /**
+     * 商品信息（包含配置信息）
+     */
+    private ItemWithConfigDTO itemWithConfig;
 }

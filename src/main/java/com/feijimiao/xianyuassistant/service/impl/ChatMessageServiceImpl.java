@@ -124,7 +124,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                 message.setMsgContent(extractString(field10Map, "reminderContent"));
                 message.setSenderUserName(extractString(field10Map, "reminderTitle"));
                 message.setSenderUserId(extractString(field10Map, "senderUserId"));
-                message.setReminderUrl(extractString(field10Map, "reminderUrl"));
+                
+                // 提取reminderUrl并解析商品ID
+                String reminderUrl = extractString(field10Map, "reminderUrl");
+                message.setReminderUrl(reminderUrl);
+                if (reminderUrl != null) {
+                    String goodsId = extractItemIdFromUrl(reminderUrl);
+                    message.setXyGoodsId(goodsId);
+                }
+                
                 message.setSenderAppV(extractString(field10Map, "_appVersion"));
                 message.setSenderOsType(extractString(field10Map, "_platform"));
             }
@@ -276,7 +284,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
                 message.setMsgContent(extractString(field10Map, "reminderContent"));
                 message.setSenderUserName(extractString(field10Map, "reminderTitle"));
                 message.setSenderUserId(extractString(field10Map, "senderUserId"));
-                message.setReminderUrl(extractString(field10Map, "reminderUrl"));
+                
+                // 提取reminderUrl并解析商品ID
+                String reminderUrl = extractString(field10Map, "reminderUrl");
+                message.setReminderUrl(reminderUrl);
+                if (reminderUrl != null) {
+                    String goodsId = extractItemIdFromUrl(reminderUrl);
+                    message.setXyGoodsId(goodsId);
+                }
+                
                 message.setSenderAppV(extractString(field10Map, "_appVersion"));
                 message.setSenderOsType(extractString(field10Map, "_platform"));
             }
@@ -308,6 +324,39 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         } catch (Exception e) {
             log.debug("【账号{}】处理聊天消息异常，跳过保存: {}", accountId, e.getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * 从reminder_url中提取itemId（商品ID）
+     * 例如：leamarket://message_chat?itemId=926462531165&peerUserId=2218021801256
+     * 提取出：926462531165
+     */
+    private String extractItemIdFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            // 查找itemId参数
+            int itemIdIndex = url.indexOf("itemId=");
+            if (itemIdIndex == -1) {
+                return null;
+            }
+            
+            // 提取itemId的值
+            int startIndex = itemIdIndex + 7; // "itemId=".length()
+            int endIndex = url.indexOf("&", startIndex);
+            
+            if (endIndex == -1) {
+                // 如果没有&，说明itemId是最后一个参数
+                return url.substring(startIndex);
+            } else {
+                return url.substring(startIndex, endIndex);
+            }
+        } catch (Exception e) {
+            log.debug("解析itemId失败: url={}, error={}", url, e.getMessage());
+            return null;
         }
     }
     

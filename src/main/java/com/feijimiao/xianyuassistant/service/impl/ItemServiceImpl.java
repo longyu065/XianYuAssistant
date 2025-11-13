@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 商品服务实现类
@@ -27,6 +28,9 @@ public class ItemServiceImpl implements ItemService {
     
     @Autowired
     private com.feijimiao.xianyuassistant.service.GoodsInfoService goodsInfoService;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.AutoDeliveryService autoDeliveryService;
 
     /**
      * 获取指定页的商品信息（内部方法）
@@ -181,8 +185,9 @@ public class ItemServiceImpl implements ItemService {
 
                 pageNumber++;
                 
-                // 添加延迟避免请求过快
-                Thread.sleep(1000);
+                // 模拟人工翻页延迟（800ms - 2000ms）
+                log.debug("模拟人工翻页延迟...");
+                com.feijimiao.xianyuassistant.utils.HumanLikeDelayUtils.pageScrollDelay();
             }
 
             // 批量保存到数据库
@@ -228,13 +233,39 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ResultObject<ItemListFromDbRespDTO> getItemsFromDb(ItemListFromDbReqDTO reqDTO) {
         try {
-            log.info("从数据库获取商品列表: status={}", reqDTO.getStatus());
+            log.info("从数据库获取商品列表: status={}, xianyuAccountId={}", reqDTO.getStatus(), reqDTO.getXianyuAccountId());
             
             List<XianyuGoodsInfo> items = goodsInfoService.listByStatus(reqDTO.getStatus());
             
+            // 为每个商品添加配置信息
+            List<ItemWithConfigDTO> itemsWithConfig = new ArrayList<>();
+            for (XianyuGoodsInfo item : items) {
+                ItemWithConfigDTO itemWithConfig = new ItemWithConfigDTO();
+                itemWithConfig.setItem(item);
+                
+                // 获取商品配置
+                if (item.getXianyuAccountId() != null) {
+                    com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig config = 
+                            autoDeliveryService.getGoodsConfig(item.getXianyuAccountId(), item.getXyGoodId());
+                    
+                    if (config != null) {
+                        itemWithConfig.setXianyuAutoDeliveryOn(config.getXianyuAutoDeliveryOn());
+                        itemWithConfig.setXianyuAutoReplyOn(config.getXianyuAutoReplyOn());
+                    } else {
+                        itemWithConfig.setXianyuAutoDeliveryOn(0);
+                        itemWithConfig.setXianyuAutoReplyOn(0);
+                    }
+                } else {
+                    itemWithConfig.setXianyuAutoDeliveryOn(0);
+                    itemWithConfig.setXianyuAutoReplyOn(0);
+                }
+                
+                itemsWithConfig.add(itemWithConfig);
+            }
+            
             ItemListFromDbRespDTO respDTO = new ItemListFromDbRespDTO();
-            respDTO.setItems(items);
-            respDTO.setTotalCount(items != null ? items.size() : 0);
+            respDTO.setItemsWithConfig(itemsWithConfig);
+            respDTO.setTotalCount(itemsWithConfig.size());
             
             log.info("从数据库获取商品列表成功: 数量={}", respDTO.getTotalCount());
             return ResultObject.success(respDTO);
@@ -285,7 +316,7 @@ public class ItemServiceImpl implements ItemService {
                     } else {
                         log.warn("商品未关联账号且未提供cookieId，无法获取详情: xyGoodId={}", reqDTO.getXyGoodId());
                         ItemDetailRespDTO respDTO = new ItemDetailRespDTO();
-                        respDTO.setItem(item);
+                        respDTO.setItemWithConfig(buildItemWithConfig(item));
                         return ResultObject.failed("商品详情为空，且商品未关联账号，请提供cookieId参数以获取详情");
                     }
                 }
@@ -309,7 +340,7 @@ public class ItemServiceImpl implements ItemService {
             }
             
             ItemDetailRespDTO respDTO = new ItemDetailRespDTO();
-            respDTO.setItem(item);
+            respDTO.setItemWithConfig(buildItemWithConfig(item));
             
             log.info("获取商品详情成功: xyGoodId={}", reqDTO.getXyGoodId());
             return ResultObject.success(respDTO);
@@ -317,6 +348,42 @@ public class ItemServiceImpl implements ItemService {
             log.error("获取商品详情失败: xyGoodId={}", reqDTO.getXyGoodId(), e);
             return ResultObject.failed("获取商品详情失败: " + e.getMessage());
         }
+    }
+    
+    /**
+     * 构建包含配置的商品信息
+     */
+    private ItemWithConfigDTO buildItemWithConfig(XianyuGoodsInfo item) {
+        ItemWithConfigDTO itemWithConfig = new ItemWithConfigDTO();
+        itemWithConfig.setItem(item);
+        
+        // 获取商品配置
+        if (item.getXianyuAccountId() != null) {
+            com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig config = 
+                    autoDeliveryService.getGoodsConfig(item.getXianyuAccountId(), item.getXyGoodId());
+            
+            if (config != null) {
+                itemWithConfig.setXianyuAutoDeliveryOn(config.getXianyuAutoDeliveryOn());
+                itemWithConfig.setXianyuAutoReplyOn(config.getXianyuAutoReplyOn());
+            } else {
+                itemWithConfig.setXianyuAutoDeliveryOn(0);
+                itemWithConfig.setXianyuAutoReplyOn(0);
+            }
+            
+            // 获取自动发货配置
+            com.feijimiao.xianyuassistant.entity.XianyuGoodsAutoDeliveryConfig deliveryConfig = 
+                    autoDeliveryService.getAutoDeliveryConfig(item.getXianyuAccountId(), item.getXyGoodId());
+            
+            if (deliveryConfig != null) {
+                itemWithConfig.setAutoDeliveryType(deliveryConfig.getType());
+                itemWithConfig.setAutoDeliveryContent(deliveryConfig.getAutoDeliveryContent());
+            }
+        } else {
+            itemWithConfig.setXianyuAutoDeliveryOn(0);
+            itemWithConfig.setXianyuAutoReplyOn(0);
+        }
+        
+        return itemWithConfig;
     }
     
     /**
