@@ -27,6 +27,9 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
 
     @Autowired
     private XianyuCookieMapper xianyuCookieMapper;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.mapper.XianyuAccountMapper xianyuAccountMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -214,6 +217,9 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
                         // 保存 token 到数据库
                         saveTokenToDatabase(accountId, accessToken);
                         
+                        // 更新账号状态为正常（1）
+                        updateAccountStatusToNormal(accountId);
+                        
                         log.info("【账号{}】accessToken获取成功并已保存到数据库", accountId);
                         log.debug("【账号{}】accessToken: {}...", accountId, 
                                 accessToken.substring(0, Math.min(20, accessToken.length())));
@@ -238,8 +244,12 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
                         pendingCaptchaAccounts.put(accountId, captchaUrl);
                         captchaTimestamps.put(accountId, System.currentTimeMillis());
                         
+                        // 更新账号状态为-2（需要验证）
+                        updateAccountStatusToCaptchaRequired(accountId);
+                        
                         log.warn("【账号{}】检测到滑块验证，URL: {}", accountId, captchaUrl);
                         log.warn("【账号{}】需要人工完成滑块验证，请访问: http://localhost:8080/websocket-manual-captcha.html", accountId);
+                        log.warn("【账号{}】账号状态已更新为-2（需要验证）", accountId);
                         
                         // 抛出异常让用户手动处理
                         throw new CaptchaRequiredException(captchaUrl);
@@ -290,6 +300,38 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
         pendingCaptchaAccounts.remove(accountId);
         captchaTimestamps.remove(accountId);
         log.info("【账号{}】验证等待状态已清除", accountId);
+    }
+    
+    /**
+     * 更新账号状态为需要验证（-2）
+     */
+    private void updateAccountStatusToCaptchaRequired(Long accountId) {
+        try {
+            com.feijimiao.xianyuassistant.entity.XianyuAccount account = xianyuAccountMapper.selectById(accountId);
+            if (account != null) {
+                account.setStatus(-2); // -2表示需要验证
+                xianyuAccountMapper.updateById(account);
+                log.info("【账号{}】账号状态已更新为-2（需要验证）", accountId);
+            }
+        } catch (Exception e) {
+            log.error("【账号{}】更新账号状态失败", accountId, e);
+        }
+    }
+    
+    /**
+     * 更新账号状态为正常（1）
+     */
+    private void updateAccountStatusToNormal(Long accountId) {
+        try {
+            com.feijimiao.xianyuassistant.entity.XianyuAccount account = xianyuAccountMapper.selectById(accountId);
+            if (account != null && account.getStatus() == -2) {
+                account.setStatus(1); // 1表示正常
+                xianyuAccountMapper.updateById(account);
+                log.info("【账号{}】账号状态已恢复为1（正常）", accountId);
+            }
+        } catch (Exception e) {
+            log.error("【账号{}】更新账号状态失败", accountId, e);
+        }
     }
     
     /**
