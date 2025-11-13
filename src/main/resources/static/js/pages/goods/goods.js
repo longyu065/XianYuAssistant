@@ -31,8 +31,10 @@ const GoodsPage = {
                     <div class="empty-state-icon">📦</div>
                     <div class="empty-state-text">请先选择账号</div>
                 </div>
+                <!-- 分页控件放到card内部 -->
+                <div id="goodsPagination" class="pagination-container card-pagination"></div>
             </div>
-
+            
             <!-- 图片预览模态框 -->
             <div id="imagePreviewModal" class="modal" onclick="this.classList.remove('show')">
                 <div class="modal-content" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent; border: none;">

@@ -46,7 +46,8 @@ public class ItemController {
     @PostMapping("/list")
     public ResultObject<ItemListFromDbRespDTO> getItemsFromDb(@RequestBody ItemListFromDbReqDTO reqDTO) {
         try {
-            log.info("从数据库获取商品列表: status={}", reqDTO.getStatus());
+            log.info("从数据库获取商品列表: status={}, pageNum={}, pageSize={}", 
+                    reqDTO.getStatus(), reqDTO.getPageNum(), reqDTO.getPageSize());
             return itemService.getItemsFromDb(reqDTO);
         } catch (Exception e) {
             log.error("获取数据库商品失败", e);
@@ -68,6 +69,42 @@ public class ItemController {
         } catch (Exception e) {
             log.error("获取商品详情失败", e);
             return ResultObject.failed("获取商品详情失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 更新商品自动发货状态
+     *
+     * @param reqDTO 请求参数
+     * @return 更新结果
+     */
+    @PostMapping("/updateAutoDeliveryStatus")
+    public ResultObject<UpdateAutoDeliveryRespDTO> updateAutoDeliveryStatus(@RequestBody UpdateAutoDeliveryReqDTO reqDTO) {
+        try {
+            log.info("更新商品自动发货状态请求: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoDeliveryOn());
+            return itemService.updateAutoDeliveryStatus(reqDTO);
+        } catch (Exception e) {
+            log.error("更新商品自动发货状态失败", e);
+            return ResultObject.failed("更新商品自动发货状态失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 更新商品自动回复状态
+     *
+     * @param reqDTO 请求参数
+     * @return 更新结果
+     */
+    @PostMapping("/updateAutoReplyStatus")
+    public ResultObject<UpdateAutoReplyRespDTO> updateAutoReplyStatus(@RequestBody UpdateAutoReplyReqDTO reqDTO) {
+        try {
+            log.info("更新商品自动回复状态请求: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoReplyOn());
+            return itemService.updateAutoReplyStatus(reqDTO);
+        } catch (Exception e) {
+            log.error("更新商品自动回复状态失败", e);
+            return ResultObject.failed("更新商品自动回复状态失败: " + e.getMessage());
         }
     }
 }

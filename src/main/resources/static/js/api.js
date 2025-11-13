@@ -43,6 +43,14 @@ const API = {
         detail: (xyGoodId, cookieId = null) => request(`${API_BASE}/items/detail`, {
             method: 'POST',
             body: JSON.stringify({ xyGoodId, cookieId })
+        }),
+        updateAutoDeliveryStatus: (data) => request(`${API_BASE}/items/updateAutoDeliveryStatus`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        updateAutoReplyStatus: (data) => request(`${API_BASE}/items/updateAutoReplyStatus`, {
+            method: 'POST',
+            body: JSON.stringify(data)
         })
     },
     
@@ -86,6 +94,11 @@ const API = {
         cleanup: () => request(`${API_BASE}/qrlogin/cleanup`, { method: 'POST' })
     }
 };
+
+// 调试信息：确认API接口已正确加载
+console.log('API对象已加载:', API);
+console.log('API.items.updateAutoDeliveryStatus是否存在:', typeof API.items.updateAutoDeliveryStatus);
+console.log('API.items.updateAutoReplyStatus是否存在:', typeof API.items.updateAutoReplyStatus);
 
 // 工具函数
 const Utils = {

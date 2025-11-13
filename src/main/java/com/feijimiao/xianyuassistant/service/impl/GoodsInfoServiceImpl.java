@@ -156,6 +156,24 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
     }
     
     @Override
+    public List<XianyuGoodsInfo> listByStatus(Integer status, int pageNum, int pageSize) {
+        try {
+            LambdaQueryWrapper<XianyuGoodsInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(XianyuGoodsInfo::getStatus, status);
+            queryWrapper.orderByDesc(XianyuGoodsInfo::getUpdatedTime);
+            
+            // 计算偏移量
+            int offset = (pageNum - 1) * pageSize;
+            
+            // 使用MyBatis Plus的分页查询
+            return goodsInfoMapper.selectList(queryWrapper.last("LIMIT " + offset + ", " + pageSize));
+        } catch (Exception e) {
+            log.error("根据状态查询商品列表失败: status={}, pageNum={}, pageSize={}", status, pageNum, pageSize, e);
+            return new java.util.ArrayList<>(); // 返回空列表而不是null
+        }
+    }
+    
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateDetailInfo(String xyGoodId, String detailInfo) {
         try {

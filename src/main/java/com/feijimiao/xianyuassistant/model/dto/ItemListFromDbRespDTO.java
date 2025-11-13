@@ -25,4 +25,19 @@ public class ItemListFromDbRespDTO {
      * 商品总数
      */
     private Integer totalCount;
+    
+    /**
+     * 当前页码
+     */
+    private Integer pageNum;
+    
+    /**
+     * 每页数量
+     */
+    private Integer pageSize;
+    
+    /**
+     * 总页数
+     */
+    private Integer totalPage;
 }

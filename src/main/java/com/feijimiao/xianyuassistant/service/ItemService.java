@@ -32,4 +32,20 @@ public interface ItemService {
      * @return 商品详情
      */
     ResultObject<ItemDetailRespDTO> getItemDetail(ItemDetailReqDTO reqDTO);
+    
+    /**
+     * 更新商品自动发货状态
+     *
+     * @param reqDTO 请求参数
+     * @return 更新结果
+     */
+    ResultObject<UpdateAutoDeliveryRespDTO> updateAutoDeliveryStatus(UpdateAutoDeliveryReqDTO reqDTO);
+    
+    /**
+     * 更新商品自动回复状态
+     *
+     * @param reqDTO 请求参数
+     * @return 更新结果
+     */
+    ResultObject<UpdateAutoReplyRespDTO> updateAutoReplyStatus(UpdateAutoReplyReqDTO reqDTO);
 }

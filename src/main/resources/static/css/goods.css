@@ -346,6 +346,60 @@
     border: 1px solid #e8e8e8;
 }
 
+/* 分页控件样式 */
+.pagination-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    margin: 20px 0 !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+/* Card内的分页控件样式 */
+.card-pagination {
+    margin: 20px 0 0 0 !important;
+    padding: 16px 20px !important;
+    border-top: 1px solid #eee !important;
+    width: 100% !important;
+}
+
+.pagination {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+.pagination .btn {
+    min-width: 40px;
+    padding: 8px 12px;
+}
+
+.pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 14px;
+    color: #666;
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    text-align: center !important;
+    width: 100% !important;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
     .goods-table-container {
@@ -406,5 +460,28 @@
     .goods-detail-modal {
         width: 95%;
         max-height: 95vh;
+    }
+    
+    .pagination-container {
+        text-align: center !important;
+    }
+    
+    .card-pagination {
+        padding: 12px 16px !important;
+    }
+    
+    .pagination {
+        gap: 4px !important;
+        justify-content: center !important;
+    }
+    
+    .pagination .btn {
+        min-width: 32px;
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    .pagination-info {
+        text-align: center !important;
     }
 }

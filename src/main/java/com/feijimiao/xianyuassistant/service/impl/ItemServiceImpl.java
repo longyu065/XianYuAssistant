@@ -234,13 +234,46 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ResultObject<ItemListFromDbRespDTO> getItemsFromDb(ItemListFromDbReqDTO reqDTO) {
         try {
-            log.info("从数据库获取商品列表: status={}, xianyuAccountId={}", reqDTO.getStatus(), reqDTO.getXianyuAccountId());
+            log.info("从数据库获取商品列表: status={}, xianyuAccountId={}, pageNum={}, pageSize={}", 
+                    reqDTO.getStatus(), reqDTO.getXianyuAccountId(), reqDTO.getPageNum(), reqDTO.getPageSize());
             
-            List<XianyuGoodsInfo> items = goodsInfoService.listByStatus(reqDTO.getStatus());
+            // 获取所有商品（用于计算总数）
+            List<XianyuGoodsInfo> allItems = goodsInfoService.listByStatus(reqDTO.getStatus());
+            
+            // 计算分页信息
+            int totalCount = allItems != null ? allItems.size() : 0;
+            int pageSize = reqDTO.getPageSize() != null ? reqDTO.getPageSize() : 20;
+            int pageNum = reqDTO.getPageNum() != null ? reqDTO.getPageNum() : 1;
+            
+            // 确保页码有效
+            if (pageNum < 1) {
+                pageNum = 1;
+            }
+            
+            // 计算总页数
+            int totalPage = (int) Math.ceil((double) totalCount / pageSize);
+            
+            // 如果总页数为0，设置为1
+            if (totalPage == 0) {
+                totalPage = 1;
+            }
+            
+            // 确保页码不超过总页数
+            if (pageNum > totalPage && totalPage > 0) {
+                pageNum = totalPage;
+            }
+            
+            // 获取当前页的商品列表
+            List<XianyuGoodsInfo> pagedItems = goodsInfoService.listByStatus(reqDTO.getStatus(), pageNum, pageSize);
+            
+            // 如果分页查询结果为null，创建空列表
+            if (pagedItems == null) {
+                pagedItems = new ArrayList<>();
+            }
             
             // 为每个商品添加配置信息
             List<ItemWithConfigDTO> itemsWithConfig = new ArrayList<>();
-            for (XianyuGoodsInfo item : items) {
+            for (XianyuGoodsInfo item : pagedItems) {
                 ItemWithConfigDTO itemWithConfig = new ItemWithConfigDTO();
                 itemWithConfig.setItem(item);
                 
@@ -266,9 +299,17 @@ public class ItemServiceImpl implements ItemService {
             
             ItemListFromDbRespDTO respDTO = new ItemListFromDbRespDTO();
             respDTO.setItemsWithConfig(itemsWithConfig);
-            respDTO.setTotalCount(itemsWithConfig.size());
+            respDTO.setTotalCount(totalCount);
+            respDTO.setPageNum(pageNum);
+            respDTO.setPageSize(pageSize);
+            respDTO.setTotalPage(totalPage);
             
-            log.info("从数据库获取商品列表成功: 数量={}", respDTO.getTotalCount());
+            // 添加调试日志
+            log.info("分页信息: totalCount={}, pageNum={}, pageSize={}, totalPage={}", 
+                    totalCount, pageNum, pageSize, totalPage);
+            
+            log.info("从数据库获取商品列表成功: 总数={}, 当前页={}, 每页={}, 总页数={}", 
+                    totalCount, pageNum, pageSize, totalPage);
             return ResultObject.success(respDTO);
         } catch (Exception e) {
             log.error("从数据库获取商品列表失败", e);
@@ -691,6 +732,94 @@ public class ItemServiceImpl implements ItemService {
         } catch (Exception e) {
             log.error("从数据库获取Cookie失败: cookieId={}", cookieId, e);
             return null;
+        }
+    }
+    
+    @Override
+    public ResultObject<UpdateAutoDeliveryRespDTO> updateAutoDeliveryStatus(UpdateAutoDeliveryReqDTO reqDTO) {
+        try {
+            log.info("更新商品自动发货状态: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoDeliveryOn());
+            
+            // 1. 获取商品配置
+            com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig goodsConfig = 
+                    autoDeliveryService.getGoodsConfig(reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            
+            // 2. 如果配置不存在，创建新的配置
+            if (goodsConfig == null) {
+                goodsConfig = new com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig();
+                goodsConfig.setXianyuAccountId(reqDTO.getXianyuAccountId());
+                goodsConfig.setXyGoodsId(reqDTO.getXyGoodsId());
+                goodsConfig.setXianyuAutoDeliveryOn(reqDTO.getXianyuAutoDeliveryOn());
+                goodsConfig.setXianyuAutoReplyOn(0); // 默认关闭自动回复
+                goodsConfig.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                goodsConfig.setUpdateTime(goodsConfig.getCreateTime());
+            } else {
+                // 3. 更新配置
+                goodsConfig.setXianyuAutoDeliveryOn(reqDTO.getXianyuAutoDeliveryOn());
+                goodsConfig.setUpdateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+            }
+            
+            // 4. 保存配置
+            autoDeliveryService.saveOrUpdateGoodsConfig(goodsConfig);
+            
+            // 5. 返回结果
+            UpdateAutoDeliveryRespDTO respDTO = new UpdateAutoDeliveryRespDTO();
+            respDTO.setSuccess(true);
+            respDTO.setMessage("自动发货状态更新成功");
+            
+            log.info("自动发货状态更新成功: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoDeliveryOn());
+            
+            return ResultObject.success(respDTO);
+        } catch (Exception e) {
+            log.error("更新自动发货状态失败: xianyuAccountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
+            return ResultObject.failed("更新自动发货状态失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public ResultObject<UpdateAutoReplyRespDTO> updateAutoReplyStatus(UpdateAutoReplyReqDTO reqDTO) {
+        try {
+            log.info("更新商品自动回复状态: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoReplyOn());
+            
+            // 1. 获取商品配置
+            com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig goodsConfig = 
+                    autoDeliveryService.getGoodsConfig(reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            
+            // 2. 如果配置不存在，创建新的配置
+            if (goodsConfig == null) {
+                goodsConfig = new com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig();
+                goodsConfig.setXianyuAccountId(reqDTO.getXianyuAccountId());
+                goodsConfig.setXyGoodsId(reqDTO.getXyGoodsId());
+                goodsConfig.setXianyuAutoDeliveryOn(0); // 默认关闭自动发货
+                goodsConfig.setXianyuAutoReplyOn(reqDTO.getXianyuAutoReplyOn());
+                goodsConfig.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                goodsConfig.setUpdateTime(goodsConfig.getCreateTime());
+            } else {
+                // 3. 更新配置
+                goodsConfig.setXianyuAutoReplyOn(reqDTO.getXianyuAutoReplyOn());
+                goodsConfig.setUpdateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+            }
+            
+            // 4. 保存配置
+            autoDeliveryService.saveOrUpdateGoodsConfig(goodsConfig);
+            
+            // 5. 返回结果
+            UpdateAutoReplyRespDTO respDTO = new UpdateAutoReplyRespDTO();
+            respDTO.setSuccess(true);
+            respDTO.setMessage("自动回复状态更新成功");
+            
+            log.info("自动回复状态更新成功: xianyuAccountId={}, xyGoodsId={}, status={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getXianyuAutoReplyOn());
+            
+            return ResultObject.success(respDTO);
+        } catch (Exception e) {
+            log.error("更新自动回复状态失败: xianyuAccountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
+            return ResultObject.failed("更新自动回复状态失败: " + e.getMessage());
         }
     }
     
