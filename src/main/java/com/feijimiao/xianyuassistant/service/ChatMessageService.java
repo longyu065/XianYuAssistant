@@ -1,6 +1,9 @@
 package com.feijimiao.xianyuassistant.service;
 
+import com.feijimiao.xianyuassistant.common.ResultObject;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
+import com.feijimiao.xianyuassistant.model.dto.MsgListReqDTO;
+import com.feijimiao.xianyuassistant.model.dto.MsgListRespDTO;
 import java.util.List;
 import java.util.Map;
 
@@ -54,4 +57,12 @@ public interface ChatMessageService {
      * @return 是否保存成功
      */
     boolean saveChatMessageWithLwp(Long accountId, String decryptedData, String lwp);
+    
+    /**
+     * 分页查询消息列表
+     * 
+     * @param reqDTO 查询请求参数
+     * @return 消息列表响应
+     */
+    ResultObject<MsgListRespDTO> getMessageList(MsgListReqDTO reqDTO);
 }

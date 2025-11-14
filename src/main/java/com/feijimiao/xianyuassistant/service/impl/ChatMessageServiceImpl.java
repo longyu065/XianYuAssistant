@@ -1,13 +1,18 @@
 package com.feijimiao.xianyuassistant.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.feijimiao.xianyuassistant.common.ResultObject;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
 import com.feijimiao.xianyuassistant.mapper.XianyuChatMessageMapper;
+import com.feijimiao.xianyuassistant.model.dto.MsgDTO;
+import com.feijimiao.xianyuassistant.model.dto.MsgListReqDTO;
+import com.feijimiao.xianyuassistant.model.dto.MsgListRespDTO;
 import com.feijimiao.xianyuassistant.service.ChatMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -401,6 +406,76 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             return Long.parseLong(value.toString());
         } catch (Exception e) {
             return null;
+        }
+    }
+    
+    @Override
+    public ResultObject<MsgListRespDTO> getMessageList(MsgListReqDTO reqDTO) {
+        try {
+            // 参数验证
+            if (reqDTO.getXianyuAccountId() == null) {
+                return ResultObject.validateFailed("xianyuAccountId不能为空");
+            }
+            
+            // 设置默认值
+            int pageNum = reqDTO.getPageNum() != null && reqDTO.getPageNum() > 0 ? reqDTO.getPageNum() : 1;
+            int pageSize = reqDTO.getPageSize() != null && reqDTO.getPageSize() > 0 ? reqDTO.getPageSize() : 20;
+            
+            // 计算偏移量
+            int offset = (pageNum - 1) * pageSize;
+            
+            // 查询总数
+            int totalCount = chatMessageMapper.countMessages(reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            
+            // 查询分页数据
+            List<XianyuChatMessage> messages = chatMessageMapper.findMessagesByPage(
+                    reqDTO.getXianyuAccountId(),
+                    reqDTO.getXyGoodsId(),
+                    pageSize,
+                    offset
+            );
+            
+            // 转换为DTO
+            List<MsgDTO> msgDTOList = new ArrayList<>();
+            if (messages != null) {
+                for (XianyuChatMessage message : messages) {
+                    MsgDTO msgDTO = new MsgDTO();
+                    msgDTO.setId(message.getId());
+                    msgDTO.setSId(message.getSId());
+                    msgDTO.setContentType(message.getContentType());
+                    msgDTO.setMsgContent(message.getMsgContent());
+                    msgDTO.setXyGoodsId(message.getXyGoodsId());
+                    msgDTO.setReminderUrl(message.getReminderUrl());
+                    msgDTO.setSenderUserName(message.getSenderUserName());
+                    msgDTO.setSenderUserId(message.getSenderUserId());
+                    msgDTO.setMessageTime(message.getMessageTime());
+                    msgDTOList.add(msgDTO);
+                }
+            }
+            
+            // 计算总页数
+            int totalPage = (int) Math.ceil((double) totalCount / pageSize);
+            if (totalPage == 0 && totalCount > 0) {
+                totalPage = 1;
+            }
+            
+            // 构建响应
+            MsgListRespDTO respDTO = new MsgListRespDTO();
+            respDTO.setList(msgDTOList);
+            respDTO.setTotalCount(totalCount);
+            respDTO.setPageNum(pageNum);
+            respDTO.setPageSize(pageSize);
+            respDTO.setTotalPage(totalPage);
+            
+            log.info("查询消息列表成功: accountId={}, xyGoodsId={}, pageNum={}, pageSize={}, totalCount={}, totalPage={}",
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), pageNum, pageSize, totalCount, totalPage);
+            
+            return ResultObject.success(respDTO);
+            
+        } catch (Exception e) {
+            log.error("查询消息列表失败: accountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
+            return ResultObject.failed("查询消息列表失败: " + e.getMessage());
         }
     }
 }

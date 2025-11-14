@@ -68,4 +68,44 @@ public interface XianyuChatMessageMapper {
      */
     @Delete("DELETE FROM xianyu_chat_message WHERE xianyu_account_id = #{accountId}")
     int deleteByAccountId(@Param("accountId") Long accountId);
+    
+    /**
+     * 分页查询消息（支持按xy_goods_id过滤）
+     * 
+     * @param accountId 账号ID（必选）
+     * @param xyGoodsId 商品ID（可选，为null时不过滤）
+     * @param limit 每页数量
+     * @param offset 偏移量
+     * @return 消息列表
+     */
+    @Select("<script>" +
+            "SELECT * FROM xianyu_chat_message " +
+            "WHERE xianyu_account_id = #{accountId} " +
+            "<if test='xyGoodsId != null and xyGoodsId != \"\"'>" +
+            "AND xy_goods_id = #{xyGoodsId} " +
+            "</if>" +
+            "ORDER BY message_time DESC " +
+            "LIMIT #{limit} OFFSET #{offset}" +
+            "</script>")
+    List<XianyuChatMessage> findMessagesByPage(@Param("accountId") Long accountId,
+                                               @Param("xyGoodsId") String xyGoodsId,
+                                               @Param("limit") int limit,
+                                               @Param("offset") int offset);
+    
+    /**
+     * 统计消息总数（支持按xy_goods_id过滤）
+     * 
+     * @param accountId 账号ID（必选）
+     * @param xyGoodsId 商品ID（可选，为null时不过滤）
+     * @return 消息总数
+     */
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM xianyu_chat_message " +
+            "WHERE xianyu_account_id = #{accountId} " +
+            "<if test='xyGoodsId != null and xyGoodsId != \"\"'>" +
+            "AND xy_goods_id = #{xyGoodsId} " +
+            "</if>" +
+            "</script>")
+    int countMessages(@Param("accountId") Long accountId,
+                     @Param("xyGoodsId") String xyGoodsId);
 }

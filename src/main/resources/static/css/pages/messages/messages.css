@@ -1,37 +1,269 @@
 /* 消息页面样式 */
 
-.message-list {
-    max-height: 500px;
-    overflow-y: auto;
+/* 消息列表滚动容器 */
+#messageList.message-list-scroll {
+    overflow-x: auto !important; /* 横向滚动，当内容宽度超过容器时显示滚动条 */
+    overflow-y: auto; /* 保持滚动功能 */
+    max-height: 600px;
+    width: 100%;
+    flex: 1; /* 占据剩余空间 */
+    min-height: 0; /* 允许flex子元素缩小 */
+    /* 确保容器不会限制内容宽度 */
+    min-width: 0;
+    /* 隐藏垂直滚动条但保持滚动功能 - Firefox */
+    scrollbar-width: thin; /* 使用thin样式，水平滚动条会显示 */
+    scrollbar-color: #c1c1c1 #f1f1f1; /* 滚动条颜色 */
+    -ms-overflow-style: auto; /* IE and Edge 显示滚动条 */
 }
 
-.message-item {
-    padding: 16px;
+/* 美化滚动条样式 - Webkit浏览器（Chrome, Safari, Edge） */
+#messageList.message-list-scroll::-webkit-scrollbar {
+    width: 0px; /* 隐藏垂直滚动条 */
+    height: 8px; /* 显示水平滚动条，当需要横向滚动时显示 */
+}
+
+/* 水平滚动条样式 - 确保水平滚动条可见 */
+#messageList.message-list-scroll::-webkit-scrollbar:horizontal {
+    height: 8px !important;
+    display: block !important;
+}
+
+#messageList.message-list-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#messageList.message-list-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+#messageList.message-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 消息表格 */
+.message-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 1200px; /* 最小宽度，确保表格不会太窄 */
+    /* 当表格宽度超过容器时，允许横向滚动 */
+    display: table; /* 确保表格正常显示 */
+}
+
+.message-table th {
+    text-align: left;
+    padding: 12px 8px;
+    background: #fafafa;
+    font-weight: 600;
+    font-size: 14px;
+    color: #666666;
+    border-bottom: 2px solid #e8e8e8;
+    white-space: nowrap;
+    /* 固定表头 */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.message-table td {
+    padding: 12px 8px;
     border-bottom: 1px solid #e8e8e8;
-    transition: all 0.2s;
+    font-size: 14px;
+    vertical-align: middle;
+    text-align: left;
 }
 
-.message-item:hover {
+.message-table tr:hover {
     background: #fafafa;
 }
 
-.message-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
+/* 表格列宽 */
+.message-table th:nth-child(1),
+.message-table td:nth-child(1) {
+    width: 60px;
+    min-width: 60px;
+    text-align: center;
 }
 
-.message-sender {
-    font-weight: 600;
-    font-size: 14px;
+.message-table th:nth-child(2),
+.message-table td:nth-child(2) {
+    width: 100px;
+    min-width: 100px;
 }
 
-.message-time {
+.message-table th:nth-child(3),
+.message-table td:nth-child(3) {
+    width: 120px;
+    min-width: 120px;
+}
+
+.message-table th:nth-child(4),
+.message-table td:nth-child(4) {
+    width: 120px;
+    min-width: 120px;
+}
+
+.message-table th:nth-child(5),
+.message-table td:nth-child(5) {
+    width: auto;
+    min-width: 200px;
+}
+
+.message-table th:nth-child(6),
+.message-table td:nth-child(6) {
+    width: 120px;
+    min-width: 120px;
+}
+
+.message-table th:nth-child(7),
+.message-table td:nth-child(7) {
+    width: 150px;
+    min-width: 150px;
+}
+
+.message-table th:nth-child(8),
+.message-table td:nth-child(8) {
+    width: 100px;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* 消息单元格样式 */
+.message-id-cell {
     font-size: 12px;
     color: #666666;
+    font-family: monospace;
 }
 
-.message-content {
-    font-size: 14px;
+.message-type-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.message-sender-cell {
+    font-weight: 500;
     color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.message-content-cell {
+    color: #1a1a1a;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.message-goods-id-cell {
+    font-size: 12px;
+    color: #007aff;
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.message-time-cell {
+    font-size: 12px;
+    color: #666666;
+    white-space: nowrap;
+}
+
+.message-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.message-actions a {
+    text-decoration: none;
+}
+
+/* 分页容器 */
+.pagination-container {
+    padding: 20px 0 !important; /* 移除左右padding，因为card已经有padding了 */
+    border-top: 1px solid #e8e8e8 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    margin: 0 !important;
+    margin-top: 20px !important; /* 添加上边距 */
+    text-align: center !important;
+    width: 100% !important;
+    min-height: 80px;
+    flex-shrink: 0 !important; /* 防止被压缩 */
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.card-pagination {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* 分页样式 */
+.pagination {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.pagination-buttons {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+.pagination .btn {
+    min-width: 40px;
+    padding: 8px 12px;
+}
+
+.pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 14px;
+    color: #666;
+}
+
+.pagination-info {
+    font-size: 14px !important;
+    color: #666 !important;
+    text-align: center !important;
+    width: 100% !important;
+    margin-top: 4px;
+}
+
+/* 加载状态 */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 14px;
 }

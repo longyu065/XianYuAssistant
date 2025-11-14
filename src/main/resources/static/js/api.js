@@ -102,6 +102,14 @@ const API = {
         status: (sessionId) => request(`${API_BASE}/qrlogin/status/${sessionId}`, { method: 'POST' }),
         cookies: (sessionId) => request(`${API_BASE}/qrlogin/cookies/${sessionId}`, { method: 'POST' }),
         cleanup: () => request(`${API_BASE}/qrlogin/cleanup`, { method: 'POST' })
+    },
+    
+    // 消息相关
+    msg: {
+        list: (data) => request(`${API_BASE}/msg/list`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
     }
 };
 

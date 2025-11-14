@@ -20,9 +20,24 @@ const MessagesPage = {
                     <div class="empty-state-icon">💬</div>
                     <div class="empty-state-text">请先选择账号</div>
                 </div>
+                <!-- 分页控件容器 -->
+                <div id="messagePagination" class="pagination-container card-pagination"></div>
             </div>
         `;
         
-        MessageManager.loadAccountSelect();
+        // 确保 MessageManager 已加载后再调用
+        if (typeof MessageManager !== 'undefined') {
+            MessageManager.loadAccountSelect();
+        } else {
+            console.warn('MessageManager 未加载，延迟调用...');
+            // 延迟调用，等待脚本加载完成
+            setTimeout(() => {
+                if (typeof MessageManager !== 'undefined') {
+                    MessageManager.loadAccountSelect();
+                } else {
+                    console.error('MessageManager 仍未加载，请检查脚本加载顺序');
+                }
+            }, 100);
+        }
     }
 };
