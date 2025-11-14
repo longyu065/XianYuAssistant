@@ -48,4 +48,12 @@ public interface ItemService {
      * @return 更新结果
      */
     ResultObject<UpdateAutoReplyRespDTO> updateAutoReplyStatus(UpdateAutoReplyReqDTO reqDTO);
+    
+    /**
+     * 删除商品
+     *
+     * @param reqDTO 请求参数
+     * @return 删除结果
+     */
+    ResultObject<DeleteItemRespDTO> deleteItem(DeleteItemReqDTO reqDTO);
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { getAccountList } from '@/api/account';
-import { getGoodsList, refreshGoods, getGoodsDetail, updateAutoDeliveryStatus, updateAutoReplyStatus } from '@/api/goods';
-import { showSuccess, showError, showInfo } from '@/utils';
+import { getGoodsList, refreshGoods, getGoodsDetail, updateAutoDeliveryStatus, updateAutoReplyStatus, deleteItem } from '@/api/goods';
+import { showSuccess, showError, showInfo, showConfirm } from '@/utils';
 import type { Account } from '@/types';
 import type { GoodsItemWithConfig } from '@/api/goods';
 import GoodsDetailDialog from './components/GoodsDetailDialog.vue';
@@ -83,8 +83,13 @@ const handleRefresh = async () => {
   try {
     const response = await refreshGoods(selectedAccountId.value);
     if (response.code === 0 || response.code === 200) {
-      showSuccess('商品数据刷新成功');
-      await loadGoods();
+      // 检查业务逻辑是否成功
+      if (response.data && response.data.success) {
+        showSuccess('商品数据刷新成功');
+        await loadGoods();
+      } else {
+        throw new Error(response.data?.message || '刷新商品数据失败');
+      }
     } else {
       throw new Error(response.msg || '刷新商品数据失败');
     }
@@ -117,6 +122,37 @@ const handlePageChange = (page: number) => {
 const handleViewDetail = (xyGoodId: string) => {
   selectedGoodsId.value = xyGoodId;
   detailDialogVisible.value = true;
+};
+
+// 删除商品
+const handleDelete = async (xyGoodId: string, title: string) => {
+  if (!selectedAccountId.value) {
+    showInfo('请先选择账号');
+    return;
+  }
+  
+  try {
+    await showConfirm(`确定要删除商品 "${title}" 吗？此操作不可恢复。`, '删除确认');
+    
+    const response = await deleteItem({
+      xianyuAccountId: selectedAccountId.value,
+      xyGoodsId: xyGoodId
+    });
+    
+    if (response.code === 0 || response.code === 200) {
+      showSuccess('商品删除成功');
+      // 重新加载商品列表
+      await loadGoods();
+    } else {
+      throw new Error(response.msg || '删除失败');
+    }
+  } catch (error: any) {
+    if (error === 'cancel') {
+      // 用户取消操作
+      return;
+    }
+    showError('删除失败: ' + error.message);
+  }
 };
 
 // 切换自动发货
@@ -305,7 +341,7 @@ onMounted(() => {
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="100" align="center" fixed="right">
+        <el-table-column label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -314,6 +350,14 @@ onMounted(() => {
               @click="handleViewDetail(row.item.xyGoodId)"
             >
               查看详情
+            </el-button>
+            <el-button
+              type="danger"
+              link
+              size="small"
+              @click="handleDelete(row.item.xyGoodId, row.item.title)"
+            >
+              删除
             </el-button>
           </template>
         </el-table-column>

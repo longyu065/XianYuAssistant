@@ -165,6 +165,11 @@ public class ItemServiceImpl implements ItemService {
                 
                 if (pageResult.getCode() != 200 || pageResult.getData() == null || !pageResult.getData().getSuccess()) {
                     log.error("获取第{}页失败", pageNumber);
+                    // 如果是第一页就失败了，返回错误
+                    if (pageNumber == 1) {
+                        return ResultObject.failed(pageResult.getMsg() != null ? pageResult.getMsg() : "获取商品列表失败");
+                    }
+                    // 如果不是第一页，继续处理已获取的数据
                     break;
                 }
 
@@ -820,6 +825,46 @@ public class ItemServiceImpl implements ItemService {
             log.error("更新自动回复状态失败: xianyuAccountId={}, xyGoodsId={}", 
                     reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
             return ResultObject.failed("更新自动回复状态失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public ResultObject<DeleteItemRespDTO> deleteItem(DeleteItemReqDTO reqDTO) {
+        try {
+            log.info("开始删除商品: xianyuAccountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            
+            // 验证参数
+            if (reqDTO.getXianyuAccountId() == null) {
+                log.error("账号ID不能为空");
+                return ResultObject.failed("账号ID不能为空");
+            }
+            
+            if (reqDTO.getXyGoodsId() == null || reqDTO.getXyGoodsId().isEmpty()) {
+                log.error("商品ID不能为空");
+                return ResultObject.failed("商品ID不能为空");
+            }
+            
+            // 删除商品信息
+            boolean deleted = goodsInfoService.deleteGoodsInfo(
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            
+            DeleteItemRespDTO respDTO = new DeleteItemRespDTO();
+            if (deleted) {
+                respDTO.setMessage("商品删除成功");
+                log.info("商品删除成功: xianyuAccountId={}, xyGoodsId={}", 
+                        reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+                return ResultObject.success(respDTO);
+            } else {
+                respDTO.setMessage("商品删除失败，商品可能不存在");
+                log.warn("商品删除失败: xianyuAccountId={}, xyGoodsId={}", 
+                        reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+                return ResultObject.failed("商品删除失败");
+            }
+        } catch (Exception e) {
+            log.error("删除商品异常: xianyuAccountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
+            return ResultObject.failed("删除商品异常: " + e.getMessage());
         }
     }
     

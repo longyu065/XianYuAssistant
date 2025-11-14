@@ -107,4 +107,22 @@ public class ItemController {
             return ResultObject.failed("更新商品自动回复状态失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 删除商品
+     *
+     * @param reqDTO 请求参数
+     * @return 删除结果
+     */
+    @PostMapping("/delete")
+    public ResultObject<DeleteItemRespDTO> deleteItem(@RequestBody DeleteItemReqDTO reqDTO) {
+        try {
+            log.info("删除商品请求: xianyuAccountId={}, xyGoodsId={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            return itemService.deleteItem(reqDTO);
+        } catch (Exception e) {
+            log.error("删除商品失败", e);
+            return ResultObject.failed("删除商品失败: " + e.getMessage());
+        }
+    }
 }

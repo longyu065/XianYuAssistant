@@ -202,4 +202,31 @@ public class GoodsInfoServiceImpl implements GoodsInfoService {
             throw new RuntimeException("更新商品详情失败: " + e.getMessage(), e);
         }
     }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteGoodsInfo(Long xianyuAccountId, String xyGoodId) {
+        try {
+            // 查询商品信息
+            LambdaQueryWrapper<XianyuGoodsInfo> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(XianyuGoodsInfo::getXyGoodId, xyGoodId);
+            queryWrapper.eq(XianyuGoodsInfo::getXianyuAccountId, xianyuAccountId);
+            XianyuGoodsInfo existingGoods = goodsInfoMapper.selectOne(queryWrapper);
+            
+            if (existingGoods == null) {
+                log.warn("商品不存在，无法删除: xyGoodId={}, accountId={}", xyGoodId, xianyuAccountId);
+                return false;
+            }
+            
+            // 删除商品
+            int deleted = goodsInfoMapper.deleteById(existingGoods.getId());
+            
+            log.info("删除商品成功: xyGoodId={}, title={}, id={}, accountId={}", 
+                    xyGoodId, existingGoods.getTitle(), existingGoods.getId(), xianyuAccountId);
+            return deleted > 0;
+        } catch (Exception e) {
+            log.error("删除商品失败: xyGoodId={}, accountId={}", xyGoodId, xianyuAccountId, e);
+            throw new RuntimeException("删除商品失败: " + e.getMessage(), e);
+        }
+    }
 }

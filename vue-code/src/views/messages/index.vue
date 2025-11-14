@@ -40,7 +40,7 @@ const loadAccounts = async () => {
       accounts.value = response.data?.accounts || [];
       // 默认选择第一个账号
       if (accounts.value.length > 0 && !selectedAccountId.value) {
-        selectedAccountId.value = accounts.value[0]?.id || null;
+        selectedAccountId.value = accounts.value[0].id;
         loadMessages();
         loadGoodsList();
       }
@@ -227,13 +227,6 @@ const formatMessageTime = (timestamp: number) => {
   });
 };
 
-// 打开链接
-const openUrl = (url: string) => {
-  if (url) {
-    window.open(url, '_blank');
-  }
-};
-
 onMounted(() => {
   loadAccounts();
   // 等待DOM渲染完成后添加滚动监听
@@ -265,12 +258,13 @@ onUnmounted(() => {
             :value="account.id"
           />
         </el-select>
-
+        
         <el-button @click="loadMessages">刷新消息</el-button>
-
+        
         <el-switch
           v-model="filterCurrentAccount"
-          inactive-text="隐藏当前账号消息"
+          active-text="隐藏当前账号消息"
+          inactive-text="显示全部消息"
           @change="loadMessages"
         />
       </div>
@@ -279,28 +273,32 @@ onUnmounted(() => {
     <div class="content-container">
       <!-- 左侧商品列表 -->
       <div class="goods-filter-panel">
-        <el-card class="goods-card">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">商品列表</span>
-              <span class="card-subtitle">共 {{ goodsList.length }} 件商品</span>
-            </div>
-          </template>
-
-          <div
-            ref="goodsListRef"
-            class="goods-list-container"
+        <div class="panel-header">
+          <span class="panel-title">商品列表</span>
+          <el-button 
+            link 
+            type="primary" 
+            @click="loadGoodsList"
+            :loading="goodsLoading"
+            size="small"
           >
-          <div
-            v-for="goods in goodsList"
+            刷新
+          </el-button>
+        </div>
+        <div 
+          ref="goodsListRef" 
+          class="goods-list-container"
+        >
+          <div 
+            v-for="goods in goodsList" 
             :key="goods.item.id"
             class="goods-item"
             :class="{ active: goodsIdFilter === goods.item.xyGoodId }"
             @click="selectGoods(goods.item.xyGoodId)"
           >
             <div class="goods-cover">
-              <img
-                :src="goods.item.coverPic"
+              <img 
+                :src="goods.item.coverPic" 
                 :alt="goods.item.title"
                 class="cover-img"
               >
@@ -310,13 +308,12 @@ onUnmounted(() => {
               <div class="goods-id">#{{ goods.item.xyGoodId }}</div>
             </div>
           </div>
-
-            <!-- 加载更多提示 -->
-            <div v-if="goodsLoading && goodsCurrentPage > 1" class="loading-more">
-              加载中...
-            </div>
+          
+          <!-- 加载更多提示 -->
+          <div v-if="goodsLoading && goodsCurrentPage > 1" class="loading-more">
+            加载中...
           </div>
-        </el-card>
+        </div>
       </div>
 
       <!-- 右侧消息列表 -->
@@ -334,16 +331,16 @@ onUnmounted(() => {
             :data="messageList"
             stripe
             style="width: 100%"
-            max-height="calc(100vh - 350px)"
+            max-height="calc(100vh - 300px)"
           >
             <el-table-column type="index" label="序号" width="60" align="center" />
-
+            
             <el-table-column prop="id" label="消息ID" width="100">
               <template #default="{ row }">
                 <div class="message-id">{{ row.id }}</div>
               </template>
             </el-table-column>
-
+            
             <el-table-column label="消息类型" width="120">
               <template #default="{ row }">
                 <el-tag :type="getContentTypeTag(row.contentType)" size="small">
@@ -351,32 +348,32 @@ onUnmounted(() => {
                 </el-tag>
               </template>
             </el-table-column>
-
+            
             <el-table-column prop="senderUserName" label="发送者" width="120" show-overflow-tooltip />
-
+            
             <el-table-column prop="msgContent" label="消息内容" min-width="200" show-overflow-tooltip>
               <template #default="{ row }">
-                <div
-                  class="message-content"
+                <div 
+                  class="message-content" 
                   :class="{ 'user-message': isUserMessage(row) }"
                 >
                   {{ row.msgContent }}
                 </div>
               </template>
             </el-table-column>
-
+            
             <el-table-column prop="xyGoodsId" label="商品ID" width="120">
               <template #default="{ row }">
                 <div class="goods-id">{{ row.xyGoodsId || '-' }}</div>
               </template>
             </el-table-column>
-
+            
             <el-table-column label="时间" width="150">
               <template #default="{ row }">
                 <div class="message-time">{{ formatMessageTime(row.messageTime) }}</div>
               </template>
             </el-table-column>
-
+            
             <el-table-column label="操作" width="100" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button
@@ -384,7 +381,7 @@ onUnmounted(() => {
                   type="primary"
                   link
                   size="small"
-                  @click="openUrl(row.reminderUrl)"
+                  @click="() => window.open(row.reminderUrl, '_blank')"
                 >
                   查看链接
                 </el-button>
@@ -413,18 +410,17 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 15px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   color: #303133;
   margin: 0;
@@ -432,62 +428,68 @@ onUnmounted(() => {
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
 .content-container {
-  flex: 1;
   display: flex;
-  gap: 15px;
-  min-height: 0;
+  flex: 1;
+  gap: 20px;
 }
 
 .goods-filter-panel {
-  flex: 1;
-  min-width: 0;
-  max-width: 400px;
-}
-
-.goods-card,
-.messages-card {
-  height: 100%;
+  width: 300px;
   display: flex;
   flex-direction: column;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .goods-list-container {
   flex: 1;
   overflow-y: auto;
+  max-height: calc(100vh - 200px);
 }
 
 .goods-item {
   display: flex;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid #ebeef5;
-  border-radius: 3px;
-  margin-bottom: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f7fa;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s;
 }
 
 .goods-item:hover {
   background-color: #f5f7fa;
-  border-color: #c0c4cc;
 }
 
 .goods-item.active {
   background-color: #ecf5ff;
-  border-color: #409eff;
+  border-left: 3px solid #409eff;
 }
 
 .goods-cover {
   width: 50px;
   height: 50px;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  margin-right: 10px;
+  margin-right: 12px;
   flex-shrink: 0;
 }
 
@@ -503,13 +505,12 @@ onUnmounted(() => {
 }
 
 .goods-title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
   color: #303133;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .goods-id {
@@ -526,8 +527,15 @@ onUnmounted(() => {
 }
 
 .messages-container {
-  flex: 2;
-  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -537,13 +545,13 @@ onUnmounted(() => {
 }
 
 .card-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #303133;
 }
 
 .card-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: #909399;
 }
 
@@ -583,57 +591,5 @@ onUnmounted(() => {
   padding: 10px 0;
   margin-top: 10px;
   border-top: 1px solid #ebeef5;
-  flex-shrink: 0;
-}
-/* 响应式适配 */
-@media (max-width: 768px) {
-  .messages-page {
-    padding: 5px;
-  }
-  
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  
-  .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  
-  .content-container {
-    flex-direction: column;
-  }
-  
-  .goods-filter-panel {
-    width: 100%;
-    max-height: 200px;
-  }
-  
-  .messages-container {
-    margin-top: 10px;
-  }
-  
-  .el-table {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .el-select, .el-button, .el-switch {
-    width: 100% !important;
-  }
-  
-  .goods-cover {
-    width: 40px;
-    height: 40px;
-  }
 }
 </style>

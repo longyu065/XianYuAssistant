@@ -1,4 +1,4 @@
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 显示成功消息
 export function showSuccess(message: string) {
@@ -18,6 +18,15 @@ export function showWarning(message: string) {
 // 显示信息消息
 export function showInfo(message: string) {
   ElMessage.info(message)
+}
+
+// 显示确认对话框
+export function showConfirm(message: string, title = '确认') {
+  return ElMessageBox.confirm(message, title, {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
 }
 
 // 格式化时间

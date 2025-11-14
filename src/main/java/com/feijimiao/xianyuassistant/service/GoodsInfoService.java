@@ -62,4 +62,13 @@ public interface GoodsInfoService {
      * @return 是否更新成功
      */
     boolean updateDetailInfo(String xyGoodId, String detailInfo);
+    
+    /**
+     * 删除商品信息
+     *
+     * @param xianyuAccountId 闲鱼账号ID
+     * @param xyGoodId 闲鱼商品ID
+     * @return 是否删除成功
+     */
+    boolean deleteGoodsInfo(Long xianyuAccountId, String xyGoodId);
 }

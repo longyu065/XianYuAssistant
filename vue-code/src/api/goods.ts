@@ -38,6 +38,15 @@ export interface GoodsDetailResponse {
   itemWithConfig: GoodsItemWithConfig;
 }
 
+// 刷新商品响应
+export interface RefreshItemsResponse {
+  success: boolean;
+  totalCount: number;
+  successCount: number;
+  updatedItemIds: string[];
+  message: string;
+}
+
 // 获取商品列表
 export function getGoodsList(data: {
   xianyuAccountId: number;
@@ -54,7 +63,7 @@ export function getGoodsList(data: {
 
 // 刷新商品数据
 export function refreshGoods(xianyuAccountId: number) {
-  return request({
+  return request<RefreshItemsResponse>({
     url: '/items/refresh',
     method: 'POST',
     data: { xianyuAccountId }
@@ -91,6 +100,18 @@ export function updateAutoReplyStatus(data: {
 }) {
   return request({
     url: '/items/updateAutoReplyStatus',
+    method: 'POST',
+    data
+  });
+}
+
+// 删除商品
+export function deleteItem(data: {
+  xianyuAccountId: number;
+  xyGoodsId: string;
+}) {
+  return request({
+    url: '/items/delete',
     method: 'POST',
     data
   });
