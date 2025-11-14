@@ -1,8 +1,13 @@
 package com.feijimiao.xianyuassistant.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
+
+import java.io.IOException;
 
 /**
  * Web MVC 配置
@@ -11,19 +16,30 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    /**
-     * 配置视图控制器，支持 SPA 路由
-     * 当访问前端路由时，返回 index.html，由 Vue Router 处理路由
-     */
     @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        // 匹配所有非 API 路径，转发到 index.html
-        // 这样可以支持 Vue Router 的 History 模式
-        registry.addViewController("/{spring:\\w+}")
-                .setViewName("forward:/index.html");
-        registry.addViewController("/{spring:\\w+}/**")
-                .setViewName("forward:/index.html");
-        registry.addViewController("/{path:[^\\.]*}/**")
-                .setViewName("forward:/index.html");
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/")
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                        // 尝试获取请求的资源
+                        Resource requestedResource = location.createRelative(resourcePath);
+                        
+                        // 如果资源存在且可读，直接返回（静态文件、API等）
+                        if (requestedResource.exists() && requestedResource.isReadable()) {
+                            return requestedResource;
+                        }
+                        
+                        // 如果是 API 请求，返回 null 让 Controller 处理
+                        if (resourcePath.startsWith("api/")) {
+                            return null;
+                        }
+                        
+                        // 其他情况返回 index.html，让 Vue Router 处理
+                        return new ClassPathResource("/static/index.html");
+                    }
+                });
     }
 }

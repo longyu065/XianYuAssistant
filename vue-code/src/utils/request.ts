@@ -29,13 +29,13 @@ service.interceptors.response.use(
     console.log('收到响应:', response.config.url, response.data)
     const res = response.data
 
-    // 如果响应码不是 0，认为是错误
+    // 如果响应码不是 0 或 200，认为是错误
     if (res.code !== 0 && res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
-      return Promise.reject(new Error(res.message || '请求失败'))
+      ElMessage.error(res.msg || res.message || '请求失败')
+      return Promise.reject(new Error(res.msg || res.message || '请求失败'))
     }
 
-    return response // 返回完整的 AxiosResponse 对象
+    return response // 保持返回完整的 AxiosResponse
   },
   (error) => {
     console.error('响应错误:', error)
@@ -46,7 +46,7 @@ service.interceptors.response.use(
 
 // 封装请求方法
 export function request<T = any>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
-  return service.request<any, ApiResponse<T>>(config)
+  return service.request<ApiResponse<T>>(config).then(response => response.data)
 }
 
 export default service
