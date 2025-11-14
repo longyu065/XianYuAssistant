@@ -1,37 +1,50 @@
 package com.feijimiao.xianyuassistant.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsAutoDeliveryConfig;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * 商品自动发货配置Mapper
  */
 @Mapper
-public interface XianyuGoodsAutoDeliveryConfigMapper {
+public interface XianyuGoodsAutoDeliveryConfigMapper extends BaseMapper<XianyuGoodsAutoDeliveryConfig> {
     
     /**
      * 根据账号ID和商品ID查询配置
+     *
+     * @param xianyuAccountId 闲鱼账号ID
+     * @param xyGoodsId 闲鱼商品ID
+     * @return 自动发货配置
      */
-    @Select("SELECT * FROM xianyu_goods_auto_delivery_config WHERE xianyu_account_id = #{accountId} AND xy_goods_id = #{xyGoodsId}")
-    XianyuGoodsAutoDeliveryConfig selectByAccountAndGoodsId(@Param("accountId") Long accountId, @Param("xyGoodsId") String xyGoodsId);
+    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, create_time, update_time FROM xianyu_goods_auto_delivery_config " +
+            "WHERE xianyu_account_id = #{xianyuAccountId} AND xy_goods_id = #{xyGoodsId} " +
+            "LIMIT 1")
+    XianyuGoodsAutoDeliveryConfig findByAccountIdAndGoodsId(@Param("xianyuAccountId") Long xianyuAccountId, 
+                                                           @Param("xyGoodsId") String xyGoodsId);
     
     /**
-     * 插入配置
+     * 根据账号ID查询所有配置
+     *
+     * @param xianyuAccountId 闲鱼账号ID
+     * @return 自动发货配置列表
      */
-    @Insert("INSERT INTO xianyu_goods_auto_delivery_config (xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content) " +
-            "VALUES (#{xianyuAccountId}, #{xianyuGoodsId}, #{xyGoodsId}, #{type}, #{autoDeliveryContent})")
-    @Options(useGeneratedKeys = true, keyProperty = "id")
-    int insert(XianyuGoodsAutoDeliveryConfig config);
+    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, create_time, update_time FROM xianyu_goods_auto_delivery_config " +
+            "WHERE xianyu_account_id = #{xianyuAccountId} " +
+            "ORDER BY create_time DESC")
+    List<XianyuGoodsAutoDeliveryConfig> findByAccountId(@Param("xianyuAccountId") Long xianyuAccountId);
     
     /**
-     * 更新配置
+     * 根据账号ID删除自动发货配置
+     *
+     * @param xianyuAccountId 闲鱼账号ID
+     * @return 删除的记录数量
      */
-    @Update("UPDATE xianyu_goods_auto_delivery_config SET type = #{type}, auto_delivery_content = #{autoDeliveryContent} WHERE id = #{id}")
-    int update(XianyuGoodsAutoDeliveryConfig config);
-    
-    /**
-     * 根据账号ID删除配置
-     */
-    @Delete("DELETE FROM xianyu_goods_auto_delivery_config WHERE xianyu_account_id = #{accountId}")
-    int deleteByAccountId(@Param("accountId") Long accountId);
+    @Delete("DELETE FROM xianyu_goods_auto_delivery_config WHERE xianyu_account_id = #{xianyuAccountId}")
+    int deleteByAccountId(@Param("xianyuAccountId") Long xianyuAccountId);
 }

@@ -128,7 +128,7 @@ import { RouterView } from 'vue-router'
 
 .el-main {
   padding: 32px 40px;
-  overflow-y: auto;
+  overflow-y: hidden;
   background: #e8e8e8;
 }
 
@@ -142,5 +142,43 @@ import { RouterView } from 'vue-router'
 :deep(.el-divider) {
   margin: 24px 0 8px;
   border-color: transparent;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .el-aside {
+    width: 60px !important;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .el-main {
+    padding: 16px 20px;
+  }
+  
+  :deep(.el-menu-item span) {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .el-container {
+    flex-direction: column;
+  }
+  
+  .el-aside {
+    width: 100% !important;
+    height: auto !important;
+  }
+  
+  .logo {
+    justify-content: center;
+  }
+  
+  .el-main {
+    padding: 10px;
+  }
 }
 </style>

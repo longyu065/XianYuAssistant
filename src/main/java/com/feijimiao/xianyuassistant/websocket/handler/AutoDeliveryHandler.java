@@ -76,14 +76,18 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
             // 提取会话ID
             String sId = getString(messageItem, "cid");
             
+            // 提取买家用户ID（从senderUserId字段）
+            String buyerUserId = getString(extension, "senderUserId");
+            
             if (xyGoodsId != null && sId != null) {
                 params.setXyGoodsId(xyGoodsId);
                 params.setSId(sId);
                 params.setReminderContent(reminderContent);
                 params.setReminderUrl(reminderUrl);
+                params.setBuyerUserId(buyerUserId);  // 设置买家用户ID
                 
-                log.info("【账号{}】检测到待付款消息: xyGoodsId={}, sId={}, content={}", 
-                        accountId, xyGoodsId, sId, reminderContent);
+                log.info("【账号{}】检测到待付款消息: xyGoodsId={}, sId={}, buyerUserId={}, content={}", 
+                        accountId, xyGoodsId, sId, buyerUserId, reminderContent);
                 
                 break; // 找到一个就够了
             }
@@ -104,11 +108,12 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
         try {
             Long accountIdLong = Long.parseLong(accountId);
             
-            // 触发自动发货
+            // 触发自动发货（传递买家用户ID）
             autoDeliveryService.handleAutoDelivery(
                     accountIdLong, 
                     deliveryParams.getXyGoodsId(), 
-                    deliveryParams.getSId()
+                    deliveryParams.getSId(),
+                    deliveryParams.getBuyerUserId()  // 传递买家用户ID
             );
             
             return "AUTO_DELIVERY_TRIGGERED";
@@ -152,5 +157,6 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
         private String sId;
         private String reminderContent;
         private String reminderUrl;
+        private String buyerUserId;  // 添加买家用户ID字段
     }
 }

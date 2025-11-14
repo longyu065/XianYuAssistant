@@ -1,21 +1,18 @@
-package com.feijimiao.xianyuassistant.entity;
+package com.feijimiao.xianyuassistant.model.dto;
 
-import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * 商品自动发货配置实体
+ * 自动发货配置响应DTO
  */
 @Data
-@TableName("xianyu_goods_auto_delivery_config")
-public class XianyuGoodsAutoDeliveryConfig {
+public class AutoDeliveryConfigRespDTO {
     
     /**
-     * 主键ID
+     * 配置ID
      */
-    @TableId(type = IdType.AUTO)
     private Long id;
     
     /**
@@ -46,12 +43,10 @@ public class XianyuGoodsAutoDeliveryConfig {
     /**
      * 创建时间
      */
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime = LocalDateTime.now();
+    private LocalDateTime createTime;
     
     /**
      * 更新时间
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime = LocalDateTime.now();
+    private LocalDateTime updateTime;
 }

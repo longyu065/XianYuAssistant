@@ -54,7 +54,7 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
     
     @Override
     public XianyuGoodsAutoDeliveryConfig getAutoDeliveryConfig(Long accountId, String xyGoodsId) {
-        return autoDeliveryConfigMapper.selectByAccountAndGoodsId(accountId, xyGoodsId);
+        return autoDeliveryConfigMapper.findByAccountIdAndGoodsId(accountId, xyGoodsId);
     }
     
     @Override
@@ -72,32 +72,36 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
     
     @Override
     public void saveOrUpdateAutoDeliveryConfig(XianyuGoodsAutoDeliveryConfig config) {
-        XianyuGoodsAutoDeliveryConfig existing = autoDeliveryConfigMapper.selectByAccountAndGoodsId(
+        XianyuGoodsAutoDeliveryConfig existing = autoDeliveryConfigMapper.findByAccountIdAndGoodsId(
                 config.getXianyuAccountId(), config.getXyGoodsId());
         
         if (existing == null) {
             autoDeliveryConfigMapper.insert(config);
         } else {
             config.setId(existing.getId());
-            autoDeliveryConfigMapper.update(config);
+            autoDeliveryConfigMapper.updateById(config);
         }
     }
     
     @Override
-    public void recordAutoDelivery(Long accountId, String xyGoodsId, String content, Integer state) {
+    public void recordAutoDelivery(Long accountId, String xyGoodsId, String buyerUserId, String content, Integer state) {
         XianyuGoodsAutoDeliveryRecord record = new XianyuGoodsAutoDeliveryRecord();
         record.setXianyuAccountId(accountId);
         record.setXyGoodsId(xyGoodsId);
+        record.setBuyerUserId(buyerUserId);
         record.setContent(content);
         record.setState(state);
         
         autoDeliveryRecordMapper.insert(record);
     }
     
+    /**
+     * 处理自动发货（带买家用户ID）
+     */
     @Override
-    public void handleAutoDelivery(Long accountId, String xyGoodsId, String sId) {
+    public void handleAutoDelivery(Long accountId, String xyGoodsId, String sId, String buyerUserId) {
         try {
-            log.info("【账号{}】处理自动发货: xyGoodsId={}, sId={}", accountId, xyGoodsId, sId);
+            log.info("【账号{}】处理自动发货: xyGoodsId={}, sId={}, buyerUserId={}", accountId, xyGoodsId, sId, buyerUserId);
             
             // 1. 检查商品是否开启自动发货
             XianyuGoodsConfig goodsConfig = getGoodsConfig(accountId, xyGoodsId);
@@ -111,7 +115,7 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             if (deliveryConfig == null || deliveryConfig.getAutoDeliveryContent() == null || 
                     deliveryConfig.getAutoDeliveryContent().isEmpty()) {
                 log.warn("【账号{}】商品未配置自动发货内容: xyGoodsId={}", accountId, xyGoodsId);
-                recordAutoDelivery(accountId, xyGoodsId, null, 0);
+                recordAutoDelivery(accountId, xyGoodsId, buyerUserId, null, 0);
                 return;
             }
             
@@ -138,8 +142,8 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             // 5. 发送消息
             boolean success = webSocketService.sendMessage(accountId, cid, toId, content);
             
-            // 6. 记录发货结果
-            recordAutoDelivery(accountId, xyGoodsId, content, success ? 1 : 0);
+            // 6. 记录发货结果（传递买家用户ID）
+            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, content, success ? 1 : 0);
             
             if (success) {
                 log.info("【账号{}】自动发货成功: xyGoodsId={}, content={}", accountId, xyGoodsId, content);
@@ -149,7 +153,7 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             
         } catch (Exception e) {
             log.error("【账号{}】自动发货异常: xyGoodsId={}", accountId, xyGoodsId, e);
-            recordAutoDelivery(accountId, xyGoodsId, null, 0);
+            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, null, 0);
         }
     }
     

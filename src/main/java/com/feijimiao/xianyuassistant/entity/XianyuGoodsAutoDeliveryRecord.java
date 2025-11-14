@@ -29,6 +29,11 @@ public class XianyuGoodsAutoDeliveryRecord {
     private String xyGoodsId;
     
     /**
+     * 买家用户ID
+     */
+    private String buyerUserId;
+    
+    /**
      * 发货消息内容
      */
     private String content;

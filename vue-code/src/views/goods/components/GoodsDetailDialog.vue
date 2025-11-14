@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getGoodsDetail, updateAutoDeliveryStatus, updateAutoReplyStatus } from '@/api/goods';
+import { getGoodsDetail } from '@/api/goods';
 import { showSuccess, showError } from '@/utils';
 import type { GoodsItemWithConfig } from '@/api/goods';
 
@@ -60,59 +60,59 @@ const loadDetail = async () => {
   }
 };
 
-// 切换自动发货
-const handleToggleAutoDelivery = async (value: boolean) => {
-  if (!props.accountId || !goodsDetail.value) return;
-
-  try {
-    const response = await updateAutoDeliveryStatus({
-      xianyuAccountId: props.accountId,
-      xyGoodsId: goodsDetail.value.item.xyGoodId,
-      xianyuAutoDeliveryOn: value ? 1 : 0
-    });
-
-    if (response.code === 0 || response.code === 200) {
-      showSuccess(`自动发货${value ? '开启' : '关闭'}成功`);
-      goodsDetail.value.xianyuAutoDeliveryOn = value ? 1 : 0;
-      emit('refresh');
-    } else {
-      throw new Error(response.msg || '操作失败');
-    }
-  } catch (error: any) {
-    showError('操作失败: ' + error.message);
-    // 恢复开关状态
-    if (goodsDetail.value) {
-      goodsDetail.value.xianyuAutoDeliveryOn = value ? 0 : 1;
-    }
-  }
-};
-
-// 切换自动回复
-const handleToggleAutoReply = async (value: boolean) => {
-  if (!props.accountId || !goodsDetail.value) return;
-
-  try {
-    const response = await updateAutoReplyStatus({
-      xianyuAccountId: props.accountId,
-      xyGoodsId: goodsDetail.value.item.xyGoodId,
-      xianyuAutoReplyOn: value ? 1 : 0
-    });
-
-    if (response.code === 0 || response.code === 200) {
-      showSuccess(`自动回复${value ? '开启' : '关闭'}成功`);
-      goodsDetail.value.xianyuAutoReplyOn = value ? 1 : 0;
-      emit('refresh');
-    } else {
-      throw new Error(response.msg || '操作失败');
-    }
-  } catch (error: any) {
-    showError('操作失败: ' + error.message);
-    // 恢复开关状态
-    if (goodsDetail.value) {
-      goodsDetail.value.xianyuAutoReplyOn = value ? 0 : 1;
-    }
-  }
-};
+// // 切换自动发货
+// const handleToggleAutoDelivery = async (value: boolean) => {
+//   if (!props.accountId || !goodsDetail.value) return;
+// 
+//   try {
+//     const response = await updateAutoDeliveryStatus({
+//       xianyuAccountId: props.accountId,
+//       xyGoodsId: goodsDetail.value.item.xyGoodId,
+//       xianyuAutoDeliveryOn: value ? 1 : 0
+//     });
+// 
+//     if (response.code === 0 || response.code === 200) {
+//       showSuccess(`自动发货${value ? '开启' : '关闭'}成功`);
+//       goodsDetail.value.xianyuAutoDeliveryOn = value ? 1 : 0;
+//       emit('refresh');
+//     } else {
+//       throw new Error(response.msg || '操作失败');
+//     }
+//   } catch (error: any) {
+//     showError('操作失败: ' + error.message);
+//     // 恢复开关状态
+//     if (goodsDetail.value) {
+//       goodsDetail.value.xianyuAutoDeliveryOn = value ? 0 : 1;
+//     }
+//   }
+// };
+// 
+// // 切换自动回复
+// const handleToggleAutoReply = async (value: boolean) => {
+//   if (!props.accountId || !goodsDetail.value) return;
+// 
+//   try {
+//     const response = await updateAutoReplyStatus({
+//       xianyuAccountId: props.accountId,
+//       xyGoodsId: goodsDetail.value.item.xyGoodId,
+//       xianyuAutoReplyOn: value ? 1 : 0
+//     });
+// 
+//     if (response.code === 0 || response.code === 200) {
+//       showSuccess(`自动回复${value ? '开启' : '关闭'}成功`);
+//       goodsDetail.value.xianyuAutoReplyOn = value ? 1 : 0;
+//       emit('refresh');
+//     } else {
+//       throw new Error(response.msg || '操作失败');
+//     }
+//   } catch (error: any) {
+//     showError('操作失败: ' + error.message);
+//     // 恢复开关状态
+//     if (goodsDetail.value) {
+//       goodsDetail.value.xianyuAutoReplyOn = value ? 0 : 1;
+//     }
+//   }
+// };
 
 // 获取状态标签类型
 const getStatusType = (status: number) => {
@@ -163,7 +163,7 @@ watch(() => props.modelValue, (val) => {
   <el-dialog
     :model-value="modelValue"
     title="商品详情"
-    width="900px"
+    width="750px"
     @close="handleClose"
   >
     <div v-loading="loading" class="goods-detail">
@@ -220,18 +220,28 @@ watch(() => props.modelValue, (val) => {
           <div class="config-section">
             <div class="config-item">
               <span class="config-label">自动发货</span>
-              <el-switch
-                :model-value="goodsDetail.xianyuAutoDeliveryOn === 1"
-                @change="handleToggleAutoDelivery"
-              />
+              <div class="switch-container">
+                <el-switch
+                  :model-value="goodsDetail.xianyuAutoDeliveryOn === 1"
+                  disabled
+                />
+                <span class="switch-status">
+                  {{ goodsDetail.xianyuAutoDeliveryOn === 1 ? '已开启' : '已关闭' }}
+                </span>
+              </div>
             </div>
-            
+                        
             <div class="config-item">
               <span class="config-label">自动回复</span>
-              <el-switch
-                :model-value="goodsDetail.xianyuAutoReplyOn === 1"
-                @change="handleToggleAutoReply"
-              />
+              <div class="switch-container">
+                <el-switch
+                  :model-value="goodsDetail.xianyuAutoReplyOn === 1"
+                  disabled
+                />
+                <span class="switch-status">
+                  {{ goodsDetail.xianyuAutoReplyOn === 1 ? '已开启' : '已关闭' }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -254,26 +264,26 @@ watch(() => props.modelValue, (val) => {
 
 <style scoped>
 .goods-detail {
-  min-height: 400px;
+  min-height: 350px;
 }
 
 .detail-content {
   display: flex;
-  gap: 32px;
+  gap: 20px;
 }
 
 .detail-left {
-  flex: 0 0 400px;
+  flex: 0 0 350px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .main-image {
   width: 100%;
-  height: 400px;
+  height: 350px;
   background: #f5f7fa;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -287,17 +297,17 @@ watch(() => props.modelValue, (val) => {
 
 .thumbnails {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
 }
 
 .thumbnail {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
+  width: 60px;
+  height: 60px;
+  border-radius: 3px;
   overflow: hidden;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   transition: border-color 0.3s;
   flex-shrink: 0;
 }
@@ -319,24 +329,24 @@ watch(() => props.modelValue, (val) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
 }
 
 .title-section {
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #ebeef5;
 }
 
 .goods-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #303133;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   line-height: 1.4;
 }
 
 .goods-id {
-  font-size: 14px;
+  font-size: 12px;
   color: #909399;
   font-family: 'Courier New', Consolas, monospace;
 }
@@ -344,42 +354,42 @@ watch(() => props.modelValue, (val) => {
 .price-section {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 1px solid #ebeef5;
 }
 
 .price {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #f56c6c;
 }
 
 .description {
-  padding: 16px;
+  padding: 12px;
   background: #f5f7fa;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .description-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #606266;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .description-content {
-  font-size: 14px;
+  font-size: 13px;
   color: #606266;
-  line-height: 1.6;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
 .config-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-top: 1px solid #ebeef5;
   border-bottom: 1px solid #ebeef5;
 }
@@ -391,19 +401,30 @@ watch(() => props.modelValue, (val) => {
 }
 
 .config-label {
-  font-size: 14px;
+  font-size: 13px;
   color: #606266;
   font-weight: 500;
+}
+
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switch-status {
+  font-size: 12px;
+  color: #909399;
 }
 
 .time-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .time-item {
-  font-size: 13px;
+  font-size: 12px;
   color: #909399;
 }
 
@@ -427,7 +448,7 @@ watch(() => props.modelValue, (val) => {
   }
   
   .main-image {
-    height: 300px;
+    height: 250px;
   }
 }
 </style>

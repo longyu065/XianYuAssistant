@@ -31,13 +31,13 @@ public interface AutoDeliveryService {
     /**
      * 记录自动发货
      */
-    void recordAutoDelivery(Long accountId, String xyGoodsId, String content, Integer state);
+    void recordAutoDelivery(Long accountId, String xyGoodsId, String buyerUserId, String content, Integer state);
     
     /**
      * 处理自动发货
      * 当收到"[我已拍下，待付款]"消息时调用
      */
-    void handleAutoDelivery(Long accountId, String xyGoodsId, String sId);
+    void handleAutoDelivery(Long accountId, String xyGoodsId, String sId, String buyerUserId);
     
     /**
      * 处理自动回复

@@ -192,6 +192,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "xianyu_account_id BIGINT NOT NULL, " +
             "xianyu_goods_id BIGINT, " +
             "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "buyer_user_id VARCHAR(100), " +
             "content TEXT, " +
             "state TINYINT DEFAULT 0, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +

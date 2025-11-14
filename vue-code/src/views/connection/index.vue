@@ -298,14 +298,18 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding: 15px;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   color: #303133;
   margin: 0;
@@ -314,22 +318,26 @@ onUnmounted(() => {
 .connection-container {
   flex: 1;
   display: flex;
-  gap: 20px;
+  gap: 15px;
   min-height: 0;
+}
+
+.account-panel,
+.status-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .account-panel {
   flex: 1;
-  min-width: 300px;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
+  max-width: 400px;
 }
 
 .status-panel {
   flex: 2;
-  min-width: 400px;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
 }
 
 .panel-header {
@@ -339,44 +347,43 @@ onUnmounted(() => {
 }
 
 .panel-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: #303133;
 }
 
 .account-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 280px);
 }
 
 .account-item {
   display: flex;
   align-items: center;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 3px;
+  margin-bottom: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   gap: 12px;
 }
 
 .account-item:hover {
-  background: #fafafa;
+  background-color: #f5f7fa;
+  border-color: #c0c4cc;
 }
 
 .account-item.active {
-  background: #1a1a1a;
-  color: white;
+  background-color: #ecf5ff;
+  border-color: #409eff;
 }
 
 .account-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #1a1a1a;
+  background: #409eff;
   color: white;
   display: flex;
   align-items: center;
@@ -387,19 +394,16 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.account-item.active .account-avatar {
-  background: white;
-  color: #1a1a1a;
-}
-
 .account-info {
   flex: 1;
   min-width: 0;
 }
 
 .account-name {
+  font-size: 13px;
   font-weight: 500;
-  margin-bottom: 4px;
+  color: #303133;
+  margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -407,7 +411,7 @@ onUnmounted(() => {
 
 .account-id {
   font-size: 12px;
-  opacity: 0.7;
+  color: #909399;
 }
 
 .empty-state {

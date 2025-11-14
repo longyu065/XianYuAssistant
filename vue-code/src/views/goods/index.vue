@@ -248,16 +248,17 @@ onMounted(() => {
         :data="goodsList"
         stripe
         style="width: 100%"
+        size="small"
       >
-        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column type="index" label="序号" width="50" align="center" />
         
-        <el-table-column prop="item.xyGoodId" label="商品ID" width="150">
+        <el-table-column prop="item.xyGoodId" label="商品ID" width="120">
           <template #default="{ row }">
             <div class="goods-id">{{ row.item.xyGoodId }}</div>
           </template>
         </el-table-column>
         
-        <el-table-column label="商品图片" width="100">
+        <el-table-column label="商品图片" width="60">
           <template #default="{ row }">
             <el-image
               :src="row.item.coverPic"
@@ -268,15 +269,15 @@ onMounted(() => {
           </template>
         </el-table-column>
         
-        <el-table-column prop="item.title" label="商品标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="item.title" label="商品标题" min-width="150" show-overflow-tooltip />
         
-        <el-table-column label="价格" width="120" align="right">
+        <el-table-column label="价格" width="100" align="right">
           <template #default="{ row }">
             <span class="goods-price">{{ formatPrice(row.item.soldPrice) }}</span>
           </template>
         </el-table-column>
         
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.item.status)" size="small">
               {{ getStatusText(row.item.status) }}
@@ -284,25 +285,27 @@ onMounted(() => {
           </template>
         </el-table-column>
         
-        <el-table-column label="自动发货" width="100" align="center">
+        <el-table-column label="自动发货" width="80" align="center">
           <template #default="{ row }">
             <el-switch
               :model-value="row.xianyuAutoDeliveryOn === 1"
               @change="(val: boolean) => handleToggleAutoDelivery(row, val)"
+              size="small"
             />
           </template>
         </el-table-column>
         
-        <el-table-column label="自动回复" width="100" align="center">
+        <el-table-column label="自动回复" width="80" align="center">
           <template #default="{ row }">
             <el-switch
               :model-value="row.xianyuAutoReplyOn === 1"
               @change="(val: boolean) => handleToggleAutoReply(row, val)"
+              size="small"
             />
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -339,9 +342,7 @@ onMounted(() => {
 
 <style scoped>
 .goods-page {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  padding: 20px;
 }
 
 .page-header {
@@ -365,9 +366,7 @@ onMounted(() => {
 }
 
 .goods-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -377,31 +376,31 @@ onMounted(() => {
 }
 
 .card-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
 .card-subtitle {
-  font-size: 14px;
+  font-size: 12px;
   color: #909399;
 }
 
 .goods-id {
   font-family: 'Courier New', Consolas, monospace;
-  font-size: 12px;
+  font-size: 10px;
   color: #606266;
   word-break: break-all;
 }
 
 .goods-image {
-  width: 60px;
-  height: 60px;
-  border-radius: 4px;
+  width: 50px;
+  height: 50px;
+  border-radius: 3px;
 }
 
 .goods-price {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #f56c6c;
 }
@@ -409,8 +408,8 @@ onMounted(() => {
 .pagination-container {
   display: flex;
   justify-content: center;
-  padding: 20px 0;
-  margin-top: 20px;
+  padding: 10px 0;
+  margin-top: 10px;
   border-top: 1px solid #ebeef5;
 }
 </style>
