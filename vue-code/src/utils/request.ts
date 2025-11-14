@@ -25,7 +25,7 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
+  (response: AxiosResponse<ApiResponse<any>>) => {
     console.log('收到响应:', response.config.url, response.data)
     const res = response.data
 
@@ -35,7 +35,7 @@ service.interceptors.response.use(
       return Promise.reject(new Error(res.message || '请求失败'))
     }
 
-    return res
+    return response // 返回完整的 AxiosResponse 对象
   },
   (error) => {
     console.error('响应错误:', error)

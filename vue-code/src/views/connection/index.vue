@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { getAccountList } from '@/api/account';
 import { getConnectionStatus, startConnection, stopConnection } from '@/api/websocket';
 import { showSuccess, showError, showInfo } from '@/utils';
-import type { Account } from '@/types';
+import type { Account, WebSocketStatus } from '@/types';
 
 interface ConnectionStatus {
   xianyuAccountId: number;
@@ -61,7 +61,7 @@ const loadConnectionStatus = async (accountId: number, silent = false) => {
   try {
     const response = await getConnectionStatus(accountId);
     if (response.code === 0 || response.code === 200) {
-      connectionStatus.value = response.data;
+      connectionStatus.value = response.data as ConnectionStatus;
       if (!silent) {
         addLog('状态已更新');
       }

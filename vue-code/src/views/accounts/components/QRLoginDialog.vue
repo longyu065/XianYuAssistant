@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { generateQRCode, getQRCodeStatus, getQRCodeCookies } from '@/api/qrlogin'
 import { addAccount } from '@/api/account'
 import { showSuccess, showError } from '@/utils'
+import type { QRLoginSession } from '@/types'
 
 interface Props {
   modelValue: boolean
@@ -18,7 +19,7 @@ const emit = defineEmits<Emits>()
 
 const qrCodeUrl = ref('')
 const sessionId = ref('')
-const status = ref('')
+const status = ref<QRLoginSession['status']>('pending')
 const statusText = ref('正在生成二维码...')
 let pollTimer: number | null = null
 
@@ -51,22 +52,18 @@ const startPolling = () => {
       const response = await getQRCodeStatus(sessionId.value)
       if (response.code === 0 || response.code === 200) {
         const data = response.data
-        status.value = data?.status || ''
+        status.value = data?.status || 'pending'
         
         switch (data?.status) {
-          case 'waiting':
+          case 'pending':
             statusText.value = '等待扫码...'
             break
           case 'scanned':
             statusText.value = '已扫码，等待确认...'
             break
-          case 'success':
+          case 'confirmed':
             statusText.value = '登录成功！正在获取信息...'
             await handleLoginSuccess()
-            break
-          case 'cancelled':
-            statusText.value = '登录已取消'
-            stopPolling()
             break
           case 'expired':
             statusText.value = '二维码已过期'
@@ -140,7 +137,7 @@ const handleClose = () => {
       <p class="qr-tip">请使用闲鱼APP扫描二维码登录</p>
       
       <div class="qr-status">
-        <el-tag :type="status === 'success' ? 'success' : 'info'">
+        <el-tag :type="status === 'confirmed' ? 'success' : 'info'">
           {{ statusText }}
         </el-tag>
       </div>

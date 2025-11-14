@@ -29,7 +29,7 @@ const loadAccounts = async () => {
       accounts.value = response.data?.accounts || [];
       // 默认选择第一个账号
       if (accounts.value.length > 0 && !selectedAccountId.value) {
-        selectedAccountId.value = accounts.value[0].id;
+        selectedAccountId.value = accounts.value[0]?.id || null;
         loadGoods();
       }
     }
