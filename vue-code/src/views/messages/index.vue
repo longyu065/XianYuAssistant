@@ -46,7 +46,7 @@ const loadAccounts = async () => {
       }
     }
   } catch (error: any) {
-    showError('加载账号列表失败: ' + error.message);
+    console.error('加载账号列表失败:', error);
   }
 };
 
@@ -78,7 +78,7 @@ const loadMessages = async () => {
       throw new Error(response.msg || '获取消息列表失败');
     }
   } catch (error: any) {
-    showError('加载消息列表失败: ' + error.message);
+    console.error('加载消息列表失败:', error);
     messageList.value = [];
   } finally {
     loading.value = false;
@@ -112,7 +112,7 @@ const loadGoodsList = async () => {
       throw new Error(response.msg || '获取商品列表失败');
     }
   } catch (error: any) {
-    showError('加载商品列表失败: ' + error.message);
+    console.error('加载商品列表失败:', error);
     goodsList.value = [];
   } finally {
     goodsLoading.value = false;

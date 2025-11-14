@@ -51,7 +51,7 @@ const handleSubmit = async () => {
       throw new Error(response.msg || '添加失败');
     }
   } catch (error: any) {
-    showError('添加失败: ' + error.message);
+    console.error('添加失败:', error);
   }
 };
 </script>

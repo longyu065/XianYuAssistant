@@ -161,6 +161,33 @@ public class WebSocketController {
             respDTO.setConnected(connected);
             respDTO.setStatus(connected ? "已连接" : "未连接");
             
+            // 获取Cookie状态和Cookie值
+            com.feijimiao.xianyuassistant.service.AccountService accountService = 
+                    applicationContext.getBean(com.feijimiao.xianyuassistant.service.AccountService.class);
+            
+            // 查询Cookie信息
+            com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper cookieMapper = 
+                    applicationContext.getBean(com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper.class);
+            
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.feijimiao.xianyuassistant.entity.XianyuCookie> cookieQuery = 
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+            cookieQuery.eq(com.feijimiao.xianyuassistant.entity.XianyuCookie::getXianyuAccountId, reqDTO.getXianyuAccountId())
+                    .orderByDesc(com.feijimiao.xianyuassistant.entity.XianyuCookie::getCreatedTime)
+                    .last("LIMIT 1");
+            com.feijimiao.xianyuassistant.entity.XianyuCookie cookie = cookieMapper.selectOne(cookieQuery);
+            
+            if (cookie != null) {
+                respDTO.setCookieStatus(cookie.getCookieStatus());
+                respDTO.setCookieText(cookie.getCookieText());
+                respDTO.setWebsocketToken(cookie.getWebsocketToken());
+                respDTO.setTokenExpireTime(cookie.getTokenExpireTime());
+            } else {
+                respDTO.setCookieStatus(null);
+                respDTO.setCookieText(null);
+                respDTO.setWebsocketToken(null);
+                respDTO.setTokenExpireTime(null);
+            }
+            
             return ResultObject.success(respDTO);
             
         } catch (Exception e) {
@@ -211,6 +238,10 @@ public class WebSocketController {
         private Long xianyuAccountId;
         private Boolean connected;
         private String status;
+        private Integer cookieStatus;  // Cookie状态 1:有效 2:过期 3:失效
+        private String cookieText;     // Cookie值
+        private String websocketToken; // WebSocket Token
+        private Long tokenExpireTime;  // Token过期时间戳（毫秒）
     }
     
     /**

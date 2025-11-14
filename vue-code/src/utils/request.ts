@@ -31,15 +31,22 @@ service.interceptors.response.use(
 
     // 如果响应码不是 0 或 200，认为是错误
     if (res.code !== 0 && res.code !== 200) {
-      ElMessage.error(res.msg || res.message || '请求失败')
-      return Promise.reject(new Error(res.msg || res.message || '请求失败'))
+      const errorMsg = res.msg || res.message || '请求失败'
+      ElMessage.error(errorMsg)
+      const error = new Error(errorMsg)
+      // 标记这个错误已经显示过消息，避免重复提示
+      ;(error as any).messageShown = true
+      return Promise.reject(error)
     }
 
     return response // 保持返回完整的 AxiosResponse
   },
   (error) => {
     console.error('响应错误:', error)
-    ElMessage.error(error.message || '网络请求失败')
+    // 只有在错误消息未显示过时才弹出提示
+    if (!(error as any).messageShown) {
+      ElMessage.error(error.message || '网络请求失败')
+    }
     return Promise.reject(error)
   }
 )

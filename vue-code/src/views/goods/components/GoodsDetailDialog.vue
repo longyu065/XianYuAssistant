@@ -54,7 +54,7 @@ const loadDetail = async () => {
       throw new Error(response.msg || '获取商品详情失败');
     }
   } catch (error: any) {
-    showError('加载商品详情失败: ' + error.message);
+    console.error('加载商品详情失败:', error);
   } finally {
     loading.value = false;
   }

@@ -371,6 +371,36 @@ public class AccountServiceImpl implements AccountService {
     
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public boolean updateCookieStatus(Long accountId, Integer cookieStatus) {
+        try {
+            log.info("更新Cookie状态: accountId={}, cookieStatus={}", accountId, cookieStatus);
+
+            // 查询Cookie记录
+            LambdaQueryWrapper<XianyuCookie> cookieQuery = new LambdaQueryWrapper<>();
+            cookieQuery.eq(XianyuCookie::getXianyuAccountId, accountId);
+            XianyuCookie cookie = cookieMapper.selectOne(cookieQuery);
+
+            if (cookie == null) {
+                log.warn("未找到Cookie记录: accountId={}", accountId);
+                return false;
+            }
+
+            // 更新Cookie状态
+            cookie.setCookieStatus(cookieStatus);
+            cookie.setUpdatedTime(getCurrentTimeString());
+            cookieMapper.updateById(cookie);
+
+            log.info("更新Cookie状态成功: accountId={}, cookieStatus={}", accountId, cookieStatus);
+            return true;
+
+        } catch (Exception e) {
+            log.error("更新Cookie状态失败: accountId={}, cookieStatus={}", accountId, cookieStatus, e);
+            return false;
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteAccountAndRelatedData(Long accountId) {
         try {
             log.info("开始删除账号及其所有关联数据: accountId={}", accountId);

@@ -6,6 +6,10 @@ export interface WebSocketStatus {
   xianyuAccountId: number;
   connected: boolean;
   status: string;
+  cookieStatus?: number;      // Cookie状态 1:有效 2:过期 3:失效
+  cookieText?: string;        // Cookie值
+  websocketToken?: string;    // WebSocket Token
+  tokenExpireTime?: number;   // Token过期时间戳（毫秒）
 }
 
 // 获取连接状态

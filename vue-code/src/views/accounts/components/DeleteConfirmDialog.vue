@@ -36,7 +36,7 @@ const handleConfirm = async () => {
       throw new Error(response.msg || '删除失败');
     }
   } catch (error: any) {
-    showError('删除失败: ' + error.message);
+    console.error('删除失败:', error);
   } finally {
     loading.value = false;
   }

@@ -56,7 +56,7 @@ const handleSubmit = async () => {
       throw new Error(response.msg || '保存失败')
     }
   } catch (error: any) {
-    showError('保存失败: ' + error.message)
+    console.error('保存失败:', error)
   }
 }
 </script>

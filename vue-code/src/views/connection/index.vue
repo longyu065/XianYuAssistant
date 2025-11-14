@@ -9,6 +9,10 @@ interface ConnectionStatus {
   xianyuAccountId: number;
   connected: boolean;
   status: string;
+  cookieStatus?: number;      // Cookie状态 1:有效 2:过期 3:失效
+  cookieText?: string;        // Cookie值
+  websocketToken?: string;    // WebSocket Token
+  tokenExpireTime?: number;   // Token过期时间戳（毫秒）
 }
 
 const loading = ref(false);
@@ -30,7 +34,7 @@ const loadAccounts = async () => {
       throw new Error(response.msg || '获取账号列表失败');
     }
   } catch (error: any) {
-    showError('加载账号列表失败: ' + error.message);
+    console.error('加载账号列表失败:', error);
     accounts.value = [];
   } finally {
     loading.value = false;
@@ -70,10 +74,10 @@ const loadConnectionStatus = async (accountId: number, silent = false) => {
     }
   } catch (error: any) {
     if (!silent) {
-      showError('加载连接状态失败: ' + error.message);
+      console.error('加载连接状态失败:', error);
       addLog('加载状态失败: ' + error.message, true);
     }
-  } finally {
+  } finally{
     statusLoading.value = false;
   }
 };
@@ -94,7 +98,7 @@ const handleStartConnection = async () => {
       throw new Error(response.msg || '启动连接失败');
     }
   } catch (error: any) {
-    showError('启动连接失败: ' + error.message);
+    console.error('启动连接失败:', error);
     addLog('启动连接失败: ' + error.message, true);
   } finally {
     statusLoading.value = false;
@@ -117,7 +121,7 @@ const handleStopConnection = async () => {
       throw new Error(response.msg || '断开连接失败');
     }
   } catch (error: any) {
-    showError('断开连接失败: ' + error.message);
+    console.error('断开连接失败:', error);
     addLog('断开连接失败: ' + error.message, true);
   } finally {
     statusLoading.value = false;
@@ -153,6 +157,60 @@ const getAccountName = (account: Account) => {
 const getAccountAvatar = (account: Account) => {
   const name = getAccountName(account);
   return name.charAt(0);
+};
+
+// 获取Cookie状态文本
+const getCookieStatusText = (status?: number) => {
+  if (status === undefined || status === null) return '未知';
+  const statusMap: Record<number, string> = {
+    1: '有效',
+    2: '过期',
+    3: '失效'
+  };
+  return statusMap[status] || '未知';
+};
+
+// 获取Cookie状态标签类型
+const getCookieStatusType = (status?: number) => {
+  if (status === undefined || status === null) return 'info';
+  const typeMap: Record<number, string> = {
+    1: 'success',
+    2: 'warning',
+    3: 'danger'
+  };
+  return typeMap[status] || 'info';
+};
+
+// 格式化时间戳
+const formatTimestamp = (timestamp?: number) => {
+  if (!timestamp) return '未设置';
+  const date = new Date(timestamp);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
+
+// 判断Token是否过期
+const isTokenExpired = (timestamp?: number) => {
+  if (!timestamp) return false;
+  return Date.now() > timestamp;
+};
+
+// 获取Token状态文本
+const getTokenStatusText = (timestamp?: number) => {
+  if (!timestamp) return '未设置';
+  return isTokenExpired(timestamp) ? '已过期' : '有效';
+};
+
+// 获取Token状态类型
+const getTokenStatusType = (timestamp?: number) => {
+  if (!timestamp) return 'info';
+  return isTokenExpired(timestamp) ? 'danger' : 'success';
 };
 
 onMounted(() => {
@@ -209,6 +267,13 @@ onUnmounted(() => {
         <template #header>
           <div class="panel-header">
             <span class="panel-title">连接状态</span>
+            <el-button
+              v-if="selectedAccountId"
+              size="small"
+              :icon="'Refresh'"
+              @click="handleRefresh"
+              circle
+            />
           </div>
         </template>
         
@@ -221,52 +286,99 @@ onUnmounted(() => {
         </div>
 
         <div v-else v-loading="statusLoading" class="status-content">
-          <!-- 连接状态卡片 -->
-          <div v-if="connectionStatus" class="status-card">
-            <div class="status-header">
-              <h3 class="status-title">连接信息</h3>
-              <el-tag
-                :type="connectionStatus.connected ? 'success' : 'danger'"
-                size="large"
-                effect="dark"
-              >
-                {{ connectionStatus.connected ? '已连接' : '未连接' }}
-              </el-tag>
-            </div>
-            
-            <div class="status-details">
-              <div class="detail-item">
-                <span class="detail-label">账号ID</span>
-                <span class="detail-value">{{ connectionStatus.xianyuAccountId }}</span>
+          <!-- 连接状态卡片 - 三列布局 -->
+          <div v-if="connectionStatus" class="status-cards-grid">
+            <!-- 连接信息卡片 -->
+            <div class="info-card">
+              <div class="card-header">
+                <span class="card-title">连接信息</span>
+                <el-tag
+                  :type="connectionStatus.connected ? 'success' : 'danger'"
+                  size="small"
+                  effect="dark"
+                >
+                  {{ connectionStatus.connected ? '已连接' : '未连接' }}
+                </el-tag>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">连接状态</span>
-                <span class="detail-value">{{ connectionStatus.status }}</span>
+              <div class="card-content">
+                <div class="info-item">
+                  <span class="info-label">账号ID</span>
+                  <span class="info-value">{{ connectionStatus.xianyuAccountId }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">状态</span>
+                  <span class="info-value">{{ connectionStatus.status }}</span>
+                </div>
+                <div class="card-actions">
+                  <el-button
+                    v-if="connectionStatus.connected"
+                    type="danger"
+                    size="default"
+                    @click="handleStopConnection"
+                    style="width: 100%"
+                  >
+                    断开连接
+                  </el-button>
+                  <el-button
+                    v-else
+                    type="primary"
+                    size="default"
+                    @click="handleStartConnection"
+                    style="width: 100%"
+                  >
+                    启动连接
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button
-              v-if="connectionStatus?.connected"
-              type="danger"
-              size="large"
-              @click="handleStopConnection"
-            >
-              断开连接
-            </el-button>
-            <el-button
-              v-else
-              type="primary"
-              size="large"
-              @click="handleStartConnection"
-            >
-              启动连接
-            </el-button>
-            <el-button size="large" @click="handleRefresh">
-              刷新状态
-            </el-button>
+            <!-- Cookie信息卡片 -->
+            <div class="info-card">
+              <div class="card-header">
+                <span class="card-title">Cookie信息</span>
+                <el-tag :type="getCookieStatusType(connectionStatus.cookieStatus)" size="small">
+                  {{ getCookieStatusText(connectionStatus.cookieStatus) }}
+                </el-tag>
+              </div>
+              <div class="card-content">
+                <div class="info-item info-item-full">
+                  <span class="info-label">Cookie值</span>
+                  <el-input
+                    :model-value="connectionStatus.cookieText || '未获取到Cookie'"
+                    type="textarea"
+                    :rows="3"
+                    readonly
+                    class="info-textarea"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- WebSocket Token卡片 -->
+            <div class="info-card">
+              <div class="card-header">
+                <span class="card-title">WebSocket Token</span>
+                <el-tag :type="getTokenStatusType(connectionStatus.tokenExpireTime)" size="small">
+                  {{ getTokenStatusText(connectionStatus.tokenExpireTime) }}
+                </el-tag>
+              </div>
+              <div class="card-content">
+                <div class="info-item">
+                  <span class="info-label">过期时间</span>
+                  <span class="info-value info-value-small">{{ formatTimestamp(connectionStatus.tokenExpireTime) }}</span>
+                </div>
+                <div class="info-item info-item-full">
+                  <span class="info-label">Token值</span>
+                  <el-input
+                    :model-value="connectionStatus.websocketToken || '未获取到Token'"
+                    type="textarea"
+                    :rows="2"
+                    readonly
+                    class="info-textarea"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 操作日志 -->
@@ -431,53 +543,89 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-.status-card {
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #e8e8e8;
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.status-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.status-details {
+/* 三列卡片网格布局 */
+.status-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-.detail-item {
+.info-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-.detail-label {
-  font-size: 14px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ebeef5;
+  gap: 8px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  white-space: nowrap;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.card-actions {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-item-full {
+  flex: 1;
+}
+
+.info-label {
+  font-size: 12px;
   color: #909399;
-  margin-bottom: 4px;
+  font-weight: 500;
 }
 
-.detail-value {
-  font-size: 16px;
+.info-value {
+  font-size: 14px;
   font-weight: 500;
   color: #303133;
+  word-break: break-all;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 12px;
+.info-value-small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.info-textarea :deep(.el-textarea__inner) {
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  background: #f8f9fa;
+  border-color: #dcdfe6;
+  resize: none;
+  padding: 8px;
 }
 
 .logs-section {
@@ -546,10 +694,34 @@ onUnmounted(() => {
   background: #34495e;
 }
 
-/* 响应式 */
+/* 响应式布局 */
+@media (max-width: 1400px) {
+  .status-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .info-card:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .status-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-card:last-child {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 768px) {
   .connection-container {
     flex-direction: column;
+  }
+  
+  .account-panel {
+    max-width: none;
   }
   
   .account-panel,
@@ -557,7 +729,7 @@ onUnmounted(() => {
     min-width: auto;
   }
   
-  .status-details {
+  .status-cards-grid {
     grid-template-columns: 1fr;
   }
 }

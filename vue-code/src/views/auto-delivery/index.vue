@@ -52,7 +52,7 @@ const loadAccounts = async () => {
       }
     }
   } catch (error: any) {
-    showError('加载账号列表失败: ' + error.message);
+    console.error('加载账号列表失败:', error);
   }
 };
 
@@ -84,7 +84,7 @@ const loadGoods = async () => {
       throw new Error(response.msg || '获取商品列表失败');
     }
   } catch (error: any) {
-    showError('加载商品列表失败: ' + error.message);
+    console.error('加载商品列表失败:', error);
     goodsList.value = [];
   } finally {
     loading.value = false;
@@ -129,7 +129,7 @@ const loadConfig = async () => {
       throw new Error(response.msg || '获取配置失败');
     }
   } catch (error: any) {
-    showError('加载配置失败: ' + error.message);
+    console.error('加载配置失败:', error);
     currentConfig.value = null;
   }
 };
@@ -164,7 +164,7 @@ const saveConfig = async () => {
       throw new Error(response.msg || '保存配置失败');
     }
   } catch (error: any) {
-    showError('保存配置失败: ' + error.message);
+    console.error('保存配置失败:', error);
   } finally {
     saving.value = false;
   }
@@ -235,7 +235,7 @@ const toggleAutoDelivery = async (value: boolean) => {
       throw new Error(response.msg || '操作失败');
     }
   } catch (error: any) {
-    showError('操作失败: ' + error.message);
+    console.error('操作失败:', error);
     // 恢复开关状态
     if (selectedGoods.value) {
       selectedGoods.value.xianyuAutoDeliveryOn = value ? 0 : 1;

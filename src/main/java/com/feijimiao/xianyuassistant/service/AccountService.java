@@ -90,4 +90,13 @@ public interface AccountService {
      * @return 是否删除成功
      */
     boolean deleteAccountAndRelatedData(Long accountId);
+    
+    /**
+     * 更新Cookie状态
+     *
+     * @param accountId 账号ID
+     * @param cookieStatus Cookie状态 1:有效 2:过期 3:失效
+     * @return 是否更新成功
+     */
+    boolean updateCookieStatus(Long accountId, Integer cookieStatus);
 }

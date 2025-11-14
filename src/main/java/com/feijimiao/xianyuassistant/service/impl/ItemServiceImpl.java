@@ -114,6 +114,24 @@ public class ItemServiceImpl implements ItemService {
                 log.error("获取商品列表失败: success=false");
                 return ResultObject.failed("获取商品列表失败");
             }
+        } catch (com.feijimiao.xianyuassistant.exception.BusinessException e) {
+            log.error("业务异常: cookieId={}, message={}", reqDTO.getCookieId(), e.getMessage());
+            
+            // 如果是令牌过期异常，更新cookie状态
+            if (e.getMessage().contains("令牌已过期")) {
+                try {
+                    Long accountId = getAccountIdFromCookieId(reqDTO.getCookieId());
+                    if (accountId != null) {
+                        accountService.updateCookieStatus(accountId, 2); // 2表示过期
+                        log.info("已更新Cookie状态为过期: accountId={}", accountId);
+                    }
+                } catch (Exception ex) {
+                    log.error("更新Cookie状态失败: cookieId={}", reqDTO.getCookieId(), ex);
+                }
+            }
+            
+            // 重新抛出业务异常，让全局异常处理器处理
+            throw e;
         } catch (Exception e) {
             log.error("获取商品列表异常: cookieId={}", reqDTO.getCookieId(), e);
             return ResultObject.failed("获取商品列表异常: " + e.getMessage());
@@ -614,6 +632,15 @@ public class ItemServiceImpl implements ItemService {
             List<String> ret = (List<String>) responseMap.get("ret");
             log.info("ret字段: {}", ret);
             
+            // 检查令牌是否过期
+            if (ret != null && !ret.isEmpty()) {
+                String retValue = ret.get(0);
+                if (retValue.contains("FAIL_SYS_TOKEN_EXOIRED") || retValue.contains("令牌过期")) {
+                    log.warn("API调用失败，ret: {}", ret);
+                    throw new com.feijimiao.xianyuassistant.exception.BusinessException("令牌已过期，请重新登录");
+                }
+            }
+            
             if (ret != null && !ret.isEmpty() && ret.get(0).contains("SUCCESS")) {
                 log.info("API调用成功，开始解析数据");
                 respDTO.setSuccess(true);
@@ -644,6 +671,9 @@ public class ItemServiceImpl implements ItemService {
                 log.warn("API调用失败，ret: {}", ret);
                 respDTO.setSuccess(false);
             }
+        } catch (com.feijimiao.xianyuassistant.exception.BusinessException e) {
+            // 重新抛出业务异常
+            throw e;
         } catch (Exception e) {
             log.error("解析商品列表响应失败", e);
             respDTO.setSuccess(false);

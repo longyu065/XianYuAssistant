@@ -34,7 +34,7 @@ const loadAccounts = async () => {
       }
     }
   } catch (error: any) {
-    showError('加载账号列表失败: ' + error.message);
+    console.error('加载账号列表失败:', error);
   }
 };
 
@@ -61,11 +61,9 @@ const loadGoods = async () => {
     if (response.code === 0 || response.code === 200) {
       goodsList.value = response.data?.itemsWithConfig || [];
       total.value = response.data?.totalCount || 0;
-    } else {
-      throw new Error(response.msg || '获取商品列表失败');
     }
   } catch (error: any) {
-    showError('加载商品列表失败: ' + error.message);
+    console.error('加载商品列表失败:', error);
     goodsList.value = [];
   } finally {
     loading.value = false;
@@ -88,13 +86,11 @@ const handleRefresh = async () => {
         showSuccess('商品数据刷新成功');
         await loadGoods();
       } else {
-        throw new Error(response.data?.message || '刷新商品数据失败');
+        showError(response.data?.message || '刷新商品数据失败');
       }
-    } else {
-      throw new Error(response.msg || '刷新商品数据失败');
     }
   } catch (error: any) {
-    showError('刷新商品数据失败: ' + error.message);
+    console.error('刷新商品数据失败:', error);
   } finally {
     refreshing.value = false;
   }
@@ -151,7 +147,7 @@ const handleDelete = async (xyGoodId: string, title: string) => {
       // 用户取消操作
       return;
     }
-    showError('删除失败: ' + error.message);
+    console.error('删除失败:', error);
   }
 };
 
@@ -173,7 +169,7 @@ const handleToggleAutoDelivery = async (item: GoodsItemWithConfig, value: boolea
       throw new Error(response.msg || '操作失败');
     }
   } catch (error: any) {
-    showError('操作失败: ' + error.message);
+    console.error('操作失败:', error);
     // 恢复开关状态
     item.xianyuAutoDeliveryOn = value ? 0 : 1;
   }
@@ -197,7 +193,7 @@ const handleToggleAutoReply = async (item: GoodsItemWithConfig, value: boolean) 
       throw new Error(response.msg || '操作失败');
     }
   } catch (error: any) {
-    showError('操作失败: ' + error.message);
+    console.error('操作失败:', error);
     // 恢复开关状态
     item.xianyuAutoReplyOn = value ? 0 : 1;
   }

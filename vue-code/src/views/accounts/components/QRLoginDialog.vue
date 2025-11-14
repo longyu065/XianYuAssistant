@@ -42,7 +42,7 @@ const generateQR = async () => {
       throw new Error(response.msg || '生成二维码失败')
     }
   } catch (error: any) {
-    showError('生成二维码失败: ' + error.message)
+    console.error('生成二维码失败:', error)
   }
 }
 
@@ -109,7 +109,7 @@ const handleLoginSuccess = async () => {
       }
     }
   } catch (error: any) {
-    showError('处理登录失败: ' + error.message)
+    console.error('处理登录失败:', error)
   } finally {
     stopPolling()
   }
