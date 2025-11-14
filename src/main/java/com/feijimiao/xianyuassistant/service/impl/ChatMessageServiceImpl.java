@@ -2,7 +2,9 @@ package com.feijimiao.xianyuassistant.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feijimiao.xianyuassistant.common.ResultObject;
+import com.feijimiao.xianyuassistant.entity.XianyuAccount;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
+import com.feijimiao.xianyuassistant.mapper.XianyuAccountMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuChatMessageMapper;
 import com.feijimiao.xianyuassistant.model.dto.MsgDTO;
 import com.feijimiao.xianyuassistant.model.dto.MsgListReqDTO;
@@ -25,6 +27,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     
     @Autowired
     private XianyuChatMessageMapper chatMessageMapper;
+    
+    @Autowired
+    private XianyuAccountMapper accountMapper;
     
     private final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -424,13 +429,27 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             // 计算偏移量
             int offset = (pageNum - 1) * pageSize;
             
+            // 获取当前账号的UNB（用于过滤）
+            String currentAccountUnb = null;
+            if (reqDTO.getFilterCurrentAccount() != null && reqDTO.getFilterCurrentAccount()) {
+                XianyuAccount account = accountMapper.selectById(reqDTO.getXianyuAccountId());
+                if (account != null) {
+                    currentAccountUnb = account.getUnb();
+                }
+            }
+            
             // 查询总数
-            int totalCount = chatMessageMapper.countMessages(reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId());
+            int totalCount = chatMessageMapper.countMessages(
+                    reqDTO.getXianyuAccountId(),
+                    reqDTO.getXyGoodsId(),
+                    currentAccountUnb
+            );
             
             // 查询分页数据
             List<XianyuChatMessage> messages = chatMessageMapper.findMessagesByPage(
                     reqDTO.getXianyuAccountId(),
                     reqDTO.getXyGoodsId(),
+                    currentAccountUnb,
                     pageSize,
                     offset
             );
@@ -467,14 +486,14 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             respDTO.setPageSize(pageSize);
             respDTO.setTotalPage(totalPage);
             
-            log.info("查询消息列表成功: accountId={}, xyGoodsId={}, pageNum={}, pageSize={}, totalCount={}, totalPage={}",
-                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), pageNum, pageSize, totalCount, totalPage);
+            log.info("查询消息列表成功: accountId={}, xyGoodsId={}, filterCurrentAccount={}, pageNum={}, pageSize={}, totalCount={}, totalPage={}",
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getFilterCurrentAccount(), pageNum, pageSize, totalCount, totalPage);
             
             return ResultObject.success(respDTO);
             
         } catch (Exception e) {
-            log.error("查询消息列表失败: accountId={}, xyGoodsId={}", 
-                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), e);
+            log.error("查询消息列表失败: accountId={}, xyGoodsId={}, filterCurrentAccount={}",
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getFilterCurrentAccount(), e);
             return ResultObject.failed("查询消息列表失败: " + e.getMessage());
         }
     }

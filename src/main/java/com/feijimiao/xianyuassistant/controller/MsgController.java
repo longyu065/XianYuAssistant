@@ -30,8 +30,8 @@ public class MsgController {
     @PostMapping("/list")
     public ResultObject<MsgListRespDTO> getMessageList(@RequestBody MsgListReqDTO reqDTO) {
         try {
-            log.info("查询消息列表请求: xianyuAccountId={}, xyGoodsId={}, pageNum={}, pageSize={}",
-                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getPageNum(), reqDTO.getPageSize());
+            log.info("查询消息列表请求: xianyuAccountId={}, xyGoodsId={}, filterCurrentAccount={}, pageNum={}, pageSize={}",
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getFilterCurrentAccount(), reqDTO.getPageNum(), reqDTO.getPageSize());
             return chatMessageService.getMessageList(reqDTO);
         } catch (Exception e) {
             log.error("查询消息列表失败", e);

@@ -29,5 +29,12 @@ public class MsgListReqDTO {
      * 默认20
      */
     private Integer pageSize = 20;
+    
+    /**
+     * 是否过滤当前账号的消息
+     * true: 不显示当前账号发送的消息
+     * false: 显示所有消息（默认）
+     */
+    private Boolean filterCurrentAccount = false;
 }
 

@@ -19,8 +19,9 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
+    outDir: '../src/main/resources/static',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    emptyOutDir: true
   }
 })

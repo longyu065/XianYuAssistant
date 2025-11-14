@@ -70,10 +70,11 @@ public interface XianyuChatMessageMapper {
     int deleteByAccountId(@Param("accountId") Long accountId);
     
     /**
-     * 分页查询消息（支持按xy_goods_id过滤）
-     * 
+     * 分页查询消息（支持按xy_goods_id过滤和sender_user_id过滤）
+     *
      * @param accountId 账号ID（必选）
      * @param xyGoodsId 商品ID（可选，为null时不过滤）
+     * @param senderUserId 发送者用户ID（可选，为null时不过滤）
      * @param limit 每页数量
      * @param offset 偏移量
      * @return 消息列表
@@ -84,19 +85,24 @@ public interface XianyuChatMessageMapper {
             "<if test='xyGoodsId != null and xyGoodsId != \"\"'>" +
             "AND xy_goods_id = #{xyGoodsId} " +
             "</if>" +
+            "<if test='senderUserId != null and senderUserId != \"\"'>" +
+            "AND sender_user_id != #{senderUserId} " +
+            "</if>" +
             "ORDER BY message_time DESC " +
             "LIMIT #{limit} OFFSET #{offset}" +
             "</script>")
     List<XianyuChatMessage> findMessagesByPage(@Param("accountId") Long accountId,
                                                @Param("xyGoodsId") String xyGoodsId,
+                                               @Param("senderUserId") String senderUserId,
                                                @Param("limit") int limit,
                                                @Param("offset") int offset);
     
     /**
-     * 统计消息总数（支持按xy_goods_id过滤）
-     * 
+     * 统计消息总数（支持按xy_goods_id过滤和sender_user_id过滤）
+     *
      * @param accountId 账号ID（必选）
      * @param xyGoodsId 商品ID（可选，为null时不过滤）
+     * @param senderUserId 发送者用户ID（可选，为null时不过滤）
      * @return 消息总数
      */
     @Select("<script>" +
@@ -105,7 +111,11 @@ public interface XianyuChatMessageMapper {
             "<if test='xyGoodsId != null and xyGoodsId != \"\"'>" +
             "AND xy_goods_id = #{xyGoodsId} " +
             "</if>" +
+            "<if test='senderUserId != null and senderUserId != \"\"'>" +
+            "AND sender_user_id != #{senderUserId} " +
+            "</if>" +
             "</script>")
     int countMessages(@Param("accountId") Long accountId,
-                     @Param("xyGoodsId") String xyGoodsId);
+                     @Param("xyGoodsId") String xyGoodsId,
+                     @Param("senderUserId") String senderUserId);
 }

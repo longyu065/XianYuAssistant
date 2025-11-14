@@ -36,6 +36,7 @@ export function getMessageList(data: {
   xyGoodsId?: string;
   pageNum?: number;
   pageSize?: number;
+  filterCurrentAccount?: boolean; // 过滤当前账号消息
 }) {
   return request<MessageListResponse>({
     url: '/msg/list',
