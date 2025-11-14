@@ -1,0 +1,93 @@
+.dashboard-page {
+  padding: 20px;
+}
+
+.stat-card {
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-right: 20px;
+}
+
+.account-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.goods-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.online-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #303133;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #909399;
+}
+
+.welcome-card {
+  margin-top: 20px;
+}
+
+.welcome-card h2 {
+  margin: 0 0 10px 0;
+  color: #303133;
+  font-size: 24px;
+}
+
+.welcome-card p {
+  color: #606266;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}
+
+.welcome-card h3 {
+  margin: 0 0 15px 0;
+  color: #409eff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.welcome-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.welcome-card li {
+  padding: 8px 0;
+  color: #606266;
+  line-height: 1.8;
+  font-size: 14px;
+}
