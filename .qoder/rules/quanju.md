@@ -16,3 +16,4 @@ java后端规范
 1、java后端代码分3层结构，controller，service（这里又分为impl和接口定义，接口的实现都放com.feijimiao.xianyuassistant.service.impl里面），dao层对应的文件夹在com.feijimiao.xianyuassistant.目录下，我都创建好了，不要重复创建
 2、所有接口都使用post请求，不要使用其他请求，且返回值都用ResultObject包装，其中泛型也要定义一个包装类按规范：XXXRespDTO取名，同时接口入参都要包装成xxxReqDTO，所有接口不能共用DTO对象
 3、数据操作使用现有的mybatis-plus，遵循mybatis规范，日志使用@slf4j，报错统一
+4、自定义的业务报错都使用BusinessException抛出

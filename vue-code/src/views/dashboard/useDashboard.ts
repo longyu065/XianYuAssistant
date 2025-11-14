@@ -1,8 +1,5 @@
 import { ref, reactive } from 'vue'
-import { getAccountList } from '@/api/account'
-import { getGoodsList } from '@/api/goods'
-import type { Account } from '@/types'
-import type { GoodsListResponse } from '@/api/goods'
+import { getDashboardStats } from '@/api/dashboard'
 
 export function useDashboard() {
   const loading = ref(false)
@@ -16,18 +13,11 @@ export function useDashboard() {
   const loadStatistics = async () => {
     loading.value = true
     try {
-      // 加载账号统计
-      const accountRes = await getAccountList()
-      if (accountRes.code === 0 || accountRes.code === 200) {
-        stats.accountCount = accountRes.data?.accounts?.length || 0
-      }
-
-      // 加载商品统计
-      const goodsRes = await getGoodsList({ xianyuAccountId: 0 })
-      if (goodsRes.code === 0 || goodsRes.code === 200) {
-        const goodsData = goodsRes.data || { itemsWithConfig: [], totalCount: 0 }
-        stats.goodsCount = goodsData.totalCount || 0
-        stats.onlineGoodsCount = goodsData.itemsWithConfig?.filter((g: any) => g.item?.status === 0).length || 0
+      const res = await getDashboardStats()
+      if (res.code === 0 || res.code === 200) {
+        stats.accountCount = res.data.accountCount
+        stats.goodsCount = res.data.itemCount
+        stats.onlineGoodsCount = res.data.sellingItemCount
       }
     } catch (error) {
       console.error('加载统计数据失败:', error)
