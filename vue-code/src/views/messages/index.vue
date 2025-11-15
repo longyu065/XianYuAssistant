@@ -270,20 +270,15 @@ onUnmounted(() => {
 
     <div class="content-container">
       <!-- 左侧商品列表 -->
-      <div class="goods-filter-panel">
-        <div class="panel-header">
-          <span class="panel-title">商品列表</span>
-          <el-button 
-            link 
-            type="primary" 
-            @click="loadGoodsList"
-            :loading="goodsLoading"
-            size="small"
-          >
-            刷新
-          </el-button>
-        </div>
+      <el-card class="goods-filter-panel">
+        <template #header>
+          <div class="panel-header">
+            <span class="panel-title">商品列表</span>
+          </div>
+        </template>
+        
         <div 
+          v-loading="goodsLoading && goodsCurrentPage === 1"
           ref="goodsListRef" 
           class="goods-list-container"
         >
@@ -311,8 +306,14 @@ onUnmounted(() => {
           <div v-if="goodsLoading && goodsCurrentPage > 1" class="loading-more">
             加载中...
           </div>
+          
+          <el-empty
+            v-if="!goodsLoading && goodsList.length === 0"
+            description="暂无商品数据"
+            :image-size="80"
+          />
         </div>
-      </div>
+      </el-card>
 
       <!-- 右侧消息列表 -->
       <div class="messages-container">
@@ -433,28 +434,27 @@ onUnmounted(() => {
 .content-container {
   display: flex;
   flex: 1;
-  gap: 20px;
+  gap: 15px;
+  min-height: 0;
 }
 
 .goods-filter-panel {
-  width: 300px;
+  flex: 1;
+  min-width: 0;
+  max-width: 400px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  background-color: #fff;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #ebeef5;
 }
 
 .panel-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: #303133;
 }
@@ -462,24 +462,27 @@ onUnmounted(() => {
 .goods-list-container {
   flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
 }
 
 .goods-item {
   display: flex;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f5f7fa;
+  padding: 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 3px;
+  margin-bottom: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  gap: 12px;
 }
 
 .goods-item:hover {
   background-color: #f5f7fa;
+  border-color: #c0c4cc;
 }
 
 .goods-item.active {
   background-color: #ecf5ff;
-  border-left: 3px solid #409eff;
+  border-color: #409eff;
 }
 
 .goods-cover {
@@ -487,8 +490,8 @@ onUnmounted(() => {
   height: 50px;
   border-radius: 4px;
   overflow: hidden;
-  margin-right: 12px;
   flex-shrink: 0;
+  background-color: #f5f7fa;
 }
 
 .cover-img {
@@ -503,9 +506,10 @@ onUnmounted(() => {
 }
 
 .goods-title {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   color: #303133;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -514,7 +518,6 @@ onUnmounted(() => {
 .goods-id {
   font-size: 12px;
   color: #909399;
-  font-family: 'Courier New', Consolas, monospace;
 }
 
 .loading-more {
@@ -525,7 +528,8 @@ onUnmounted(() => {
 }
 
 .messages-container {
-  flex: 1;
+  flex: 2;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }

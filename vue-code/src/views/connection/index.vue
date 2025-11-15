@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ElMessageBox } from 'element-plus';
 import { getAccountList } from '@/api/account';
 import { getConnectionStatus, startConnection, stopConnection } from '@/api/websocket';
 import { showSuccess, showError, showInfo } from '@/utils';
@@ -120,6 +121,22 @@ const handleStartConnection = async () => {
 // 停止连接
 const handleStopConnection = async () => {
   if (!selectedAccountId.value) return;
+  
+  // 显示确认对话框
+  try {
+    await ElMessageBox.confirm(
+      '断开连接后将无法接收消息和执行自动化流程，确定要断开连接吗？',
+      '确认断开连接',
+      {
+        confirmButtonText: '确定断开',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+  } catch {
+    // 用户取消操作
+    return;
+  }
   
   statusLoading.value = true;
   addLog('正在断开连接...');
@@ -339,7 +356,9 @@ onUnmounted(() => {
                 <div class="header-info">
                   <h2 class="main-title">连接状态</h2>
                   <p class="main-subtitle">账号 ID: {{ connectionStatus.xianyuAccountId }} · {{ connectionStatus.status }}</p>
-                  <p class="main-note">未启动连接将无法收到消息以及自动化处理</p>
+                  <p class="main-note" :class="connectionStatus.connected ? 'note-success' : 'note-danger'">
+                    {{ connectionStatus.connected ? '已连接到闲鱼服务器' : '当前未连接到闲鱼服务器，无法监听消息以及执行自动化流程' }}
+                  </p>
                 </div>
               </div>
               <div class="header-right">
@@ -393,9 +412,9 @@ onUnmounted(() => {
                     </el-button>
                     <el-button
                       type="primary"
-                      plain
                       size="small"
                       @click="handleManualUpdateCookie"
+                      class="manual-update-btn"
                     >
                       ✏️ 手动更新
                     </el-button>
@@ -441,24 +460,29 @@ onUnmounted(() => {
 
             <!-- 操作区域 -->
             <div class="main-actions">
-              <el-button
-                v-if="connectionStatus.connected"
-                type="danger"
-                size="default"
-                @click="handleStopConnection"
-                class="main-action-btn"
-              >
-                ⏸ 断开连接
-              </el-button>
-              <el-button
-                v-else
-                type="primary"
-                size="default"
-                @click="handleStartConnection"
-                class="main-action-btn"
-              >
-                ▶ 启动连接
-              </el-button>
+              <div class="action-wrapper">
+                <el-button
+                  v-if="connectionStatus.connected"
+                  type="danger"
+                  size="default"
+                  @click="handleStopConnection"
+                  class="main-action-btn"
+                >
+                  ⏸ 断开连接
+                </el-button>
+                <el-button
+                  v-else
+                  type="success"
+                  size="default"
+                  @click="handleStartConnection"
+                  class="main-action-btn start-connection-btn"
+                >
+                  ▶ 启动连接
+                </el-button>
+                <div class="action-tip">
+                  ⚠️ 请勿频繁启用连接和断开连接，否则容易触发滑动窗口人机校验，导致账号暂时不可用
+                </div>
+              </div>
             </div>
           </div>
 
@@ -713,9 +737,24 @@ onUnmounted(() => {
 
 .main-note {
   font-size: 11px;
-  color: #f56c6c;
   margin: 0;
   font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.note-danger {
+  color: #f56c6c;
+  background: #fef0f0;
+  border: 1px solid #fde2e2;
+}
+
+.note-success {
+  color: #67c23a;
+  background: #f0f9ff;
+  border: 1px solid #c6f6d5;
 }
 
 .header-right {
@@ -856,18 +895,52 @@ onUnmounted(() => {
   flex: 1;
 }
 
+.manual-update-btn {
+  color: white !important;
+}
+
 /* 主操作区域 */
 .main-actions {
   padding: 14px 20px;
   background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
   border-top: 1px solid #e4e7ed;
+  display: flex;
+  justify-content: center;
+}
+
+.action-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .main-action-btn {
-  width: 100%;
+  width: 50%;
   height: 40px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.action-tip {
+  font-size: 11px;
+  color: #909399;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 80%;
+}
+
+.start-connection-btn {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%) !important;
+  border-color: #67c23a !important;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.3) !important;
+}
+
+.start-connection-btn:hover {
+  background: linear-gradient(135deg, #85ce61 0%, #95d475 100%) !important;
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4) !important;
+  transform: translateY(-1px);
 }
 
 .logs-section {
