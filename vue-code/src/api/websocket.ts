@@ -38,3 +38,12 @@ export function stopConnection(accountId: number) {
     data: { xianyuAccountId: accountId }
   });
 }
+
+// 更新Cookie
+export function updateCookie(data: { xianyuAccountId: number; cookieText: string }) {
+  return request({
+    url: '/websocket/updateCookie',
+    method: 'POST',
+    data
+  });
+}

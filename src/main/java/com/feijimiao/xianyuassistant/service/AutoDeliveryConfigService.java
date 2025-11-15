@@ -1,9 +1,9 @@
 package com.feijimiao.xianyuassistant.service;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
-import com.feijimiao.xianyuassistant.model.dto.AutoDeliveryConfigReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.AutoDeliveryConfigRespDTO;
-import com.feijimiao.xianyuassistant.model.dto.AutoDeliveryConfigQueryReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryConfigReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryConfigRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryConfigQueryReqDTO;
 
 import java.util.List;
 

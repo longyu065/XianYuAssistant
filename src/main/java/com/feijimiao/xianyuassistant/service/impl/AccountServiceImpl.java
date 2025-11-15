@@ -72,6 +72,28 @@ public class AccountServiceImpl implements AccountService {
     private String getFutureTimeString(int days) {
         return LocalDateTime.now().plusDays(days).format(DATETIME_FORMATTER);
     }
+    
+    /**
+     * 从Cookie字符串中提取_m_h5_tk值
+     *
+     * @param cookie Cookie字符串
+     * @return _m_h5_tk值，如果未找到则返回null
+     */
+    private String extractMH5TkFromCookie(String cookie) {
+        if (cookie == null || cookie.isEmpty()) {
+            return null;
+        }
+        
+        // 查找_m_h5_tk=后面的值
+        String[] cookieParts = cookie.split(";\\s*");
+        for (String part : cookieParts) {
+            if (part.startsWith("_m_h5_tk=")) {
+                return part.substring(9); // "_m_h5_tk=".length() = 9
+            }
+        }
+        
+        return null;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -450,6 +472,63 @@ public class AccountServiceImpl implements AccountService {
         } catch (Exception e) {
             log.error("删除账号及其关联数据失败: accountId={}", accountId, e);
             throw new RuntimeException("删除账号失败: " + e.getMessage(), e);
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateAccountCookie(Long accountId, String unb, String cookieText) {
+        try {
+            log.info("更新账号Cookie: accountId={}, unb={}", accountId, unb);
+
+            // 1. 更新账号的UNB
+            XianyuAccount account = accountMapper.selectById(accountId);
+            if (account == null) {
+                log.warn("账号不存在: accountId={}", accountId);
+                return false;
+            }
+            
+            account.setUnb(unb);
+            account.setUpdatedTime(getCurrentTimeString());
+            accountMapper.updateById(account);
+            log.info("更新账号UNB成功: accountId={}, unb={}", accountId, unb);
+
+            // 2. 提取_m_h5_tk
+            String mH5Tk = extractMH5TkFromCookie(cookieText);
+
+            // 3. 查询现有Cookie
+            LambdaQueryWrapper<XianyuCookie> cookieQuery = new LambdaQueryWrapper<>();
+            cookieQuery.eq(XianyuCookie::getXianyuAccountId, accountId);
+            XianyuCookie cookie = cookieMapper.selectOne(cookieQuery);
+
+            if (cookie != null) {
+                // 更新现有Cookie
+                cookie.setCookieText(cookieText);
+                cookie.setMH5Tk(mH5Tk);
+                cookie.setCookieStatus(1);
+                cookie.setExpireTime(getFutureTimeString(30));
+                cookie.setUpdatedTime(getCurrentTimeString());
+                cookieMapper.updateById(cookie);
+                log.info("更新Cookie成功: accountId={}", accountId);
+            } else {
+                // 创建新Cookie
+                cookie = new XianyuCookie();
+                cookie.setXianyuAccountId(accountId);
+                cookie.setCookieText(cookieText);
+                cookie.setMH5Tk(mH5Tk);
+                cookie.setCookieStatus(1);
+                cookie.setExpireTime(getFutureTimeString(30));
+                cookie.setCreatedTime(getCurrentTimeString());
+                cookie.setUpdatedTime(getCurrentTimeString());
+                cookieMapper.insert(cookie);
+                log.info("创建Cookie成功: accountId={}", accountId);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            log.error("更新账号Cookie失败: accountId={}, unb={}", accountId, unb, e);
+            return false;
         }
     }
 }

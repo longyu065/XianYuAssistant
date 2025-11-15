@@ -1,11 +1,10 @@
 package com.feijimiao.xianyuassistant.controller;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
-import com.feijimiao.xianyuassistant.entity.XianyuAccount;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
 import com.feijimiao.xianyuassistant.mapper.XianyuAccountMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
-import com.feijimiao.xianyuassistant.model.dto.DashboardStatsRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.DashboardStatsRespDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -1,8 +1,8 @@
 package com.feijimiao.xianyuassistant.service.impl;
 
-import com.feijimiao.xianyuassistant.controller.model.QRLoginResponse;
-import com.feijimiao.xianyuassistant.controller.model.QRLoginSession;
-import com.feijimiao.xianyuassistant.controller.model.QRStatusResponse;
+import com.feijimiao.xianyuassistant.controller.dto.QRLoginResponse;
+import com.feijimiao.xianyuassistant.controller.dto.QRLoginSession;
+import com.feijimiao.xianyuassistant.controller.dto.QRStatusResponse;
 import com.feijimiao.xianyuassistant.service.QRLoginService;
 import com.feijimiao.xianyuassistant.utils.CookieUtils;
 import com.google.gson.Gson;

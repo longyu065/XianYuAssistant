@@ -99,4 +99,14 @@ public interface AccountService {
      * @return 是否更新成功
      */
     boolean updateCookieStatus(Long accountId, Integer cookieStatus);
+    
+    /**
+     * 更新账号Cookie（包含UNB更新）
+     *
+     * @param accountId 账号ID
+     * @param unb UNB标识
+     * @param cookieText Cookie字符串
+     * @return 是否更新成功
+     */
+    boolean updateAccountCookie(Long accountId, String unb, String cookieText);
 }

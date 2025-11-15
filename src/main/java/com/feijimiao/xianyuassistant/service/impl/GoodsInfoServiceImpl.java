@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
-import com.feijimiao.xianyuassistant.model.dto.ItemDTO;
+import com.feijimiao.xianyuassistant.controller.dto.ItemDTO;
 import com.feijimiao.xianyuassistant.service.GoodsInfoService;
 import com.feijimiao.xianyuassistant.utils.ItemDetailUtils;
 import lombok.extern.slf4j.Slf4j;

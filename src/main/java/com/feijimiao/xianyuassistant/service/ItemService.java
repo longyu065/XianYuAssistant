@@ -1,7 +1,7 @@
 package com.feijimiao.xianyuassistant.service;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
-import com.feijimiao.xianyuassistant.model.dto.*;
+import com.feijimiao.xianyuassistant.controller.dto.*;
 
 /**
  * 商品服务接口

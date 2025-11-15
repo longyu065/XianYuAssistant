@@ -45,3 +45,5 @@ export function manualAddAccount(data: { accountNote: string; unb: string; cooki
     data
   })
 }
+
+

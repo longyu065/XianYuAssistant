@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { getAccountList } from '@/api/account';
 import { getConnectionStatus, startConnection, stopConnection } from '@/api/websocket';
 import { showSuccess, showError, showInfo } from '@/utils';
 import type { Account, WebSocketStatus } from '@/types';
+import RefreshCookieDialog from './components/RefreshCookieDialog.vue';
+import ManualUpdateCookieDialog from './components/ManualUpdateCookieDialog.vue';
 
 interface ConnectionStatus {
   xianyuAccountId: number;
@@ -22,6 +24,16 @@ const connectionStatus = ref<ConnectionStatus | null>(null);
 const statusLoading = ref(false);
 const logs = ref<Array<{ time: string; message: string; isError?: boolean }>>([]);
 let statusInterval: number | null = null;
+
+// 扫码刷新Cookie对话框
+const showRefreshCookieDialog = ref(false);
+// 手动更新Cookie对话框
+const showManualUpdateCookieDialog = ref(false);
+
+// 当前选中的账号信息
+const currentAccount = computed(() => {
+  return accounts.value.find(acc => acc.id === selectedAccountId.value);
+});
 
 // 加载账号列表
 const loadAccounts = async () => {
@@ -213,6 +225,32 @@ const getTokenStatusType = (timestamp?: number) => {
   return isTokenExpired(timestamp) ? 'danger' : 'success';
 };
 
+// 打开扫码刷新Cookie对话框
+const handleRefreshCookie = () => {
+  showRefreshCookieDialog.value = true;
+};
+
+// 打开手动更新Cookie对话框
+const handleManualUpdateCookie = () => {
+  showManualUpdateCookieDialog.value = true;
+};
+
+// Cookie刷新成功回调
+const handleRefreshCookieSuccess = async () => {
+  addLog('Cookie已刷新');
+  if (selectedAccountId.value) {
+    await loadConnectionStatus(selectedAccountId.value);
+  }
+};
+
+// Cookie手动更新成功回调
+const handleManualUpdateCookieSuccess = async () => {
+  addLog('Cookie已手动更新');
+  if (selectedAccountId.value) {
+    await loadConnectionStatus(selectedAccountId.value);
+  }
+};
+
 onMounted(() => {
   loadAccounts();
 });
@@ -346,10 +384,29 @@ onUnmounted(() => {
                   <el-input
                     :model-value="connectionStatus.cookieText || '未获取到Cookie'"
                     type="textarea"
-                    :rows="3"
+                    :rows="2"
                     readonly
                     class="info-textarea"
                   />
+                </div>
+                <div class="card-actions">
+                  <el-button
+                    type="warning"
+                    size="default"
+                    @click="handleRefreshCookie"
+                    class="action-btn"
+                  >
+                    扫码刷新
+                  </el-button>
+                  <el-button
+                    type="primary"
+                    size="default"
+                    plain
+                    @click="handleManualUpdateCookie"
+                    class="action-btn"
+                  >
+                    手动更新
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -402,6 +459,24 @@ onUnmounted(() => {
         </div>
       </el-card>
     </div>
+
+    <!-- 扫码刷新Cookie对话框 -->
+    <RefreshCookieDialog
+      v-if="currentAccount"
+      v-model="showRefreshCookieDialog"
+      :account-id="currentAccount.id"
+      :current-unb="currentAccount.unb"
+      @success="handleRefreshCookieSuccess"
+    />
+
+    <!-- 手动更新Cookie对话框 -->
+    <ManualUpdateCookieDialog
+      v-if="currentAccount && connectionStatus"
+      v-model="showManualUpdateCookieDialog"
+      :account-id="currentAccount.id"
+      :current-cookie="connectionStatus.cookieText || ''"
+      @success="handleManualUpdateCookieSuccess"
+    />
   </div>
 </template>
 
@@ -588,6 +663,12 @@ onUnmounted(() => {
 .card-actions {
   margin-top: auto;
   padding-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
 }
 
 .info-item {

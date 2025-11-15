@@ -2,8 +2,8 @@ package com.feijimiao.xianyuassistant.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feijimiao.xianyuassistant.common.ResultObject;
+import com.feijimiao.xianyuassistant.controller.dto.*;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
-import com.feijimiao.xianyuassistant.model.dto.*;
 import com.feijimiao.xianyuassistant.service.ItemService;
 import com.feijimiao.xianyuassistant.utils.XianyuApiUtils;
 import com.feijimiao.xianyuassistant.utils.XianyuSignUtils;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 商品服务实现类

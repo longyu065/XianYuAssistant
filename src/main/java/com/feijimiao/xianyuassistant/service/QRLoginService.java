@@ -1,7 +1,7 @@
 package com.feijimiao.xianyuassistant.service;
 
-import com.feijimiao.xianyuassistant.controller.model.QRLoginResponse;
-import com.feijimiao.xianyuassistant.controller.model.QRStatusResponse;
+import com.feijimiao.xianyuassistant.controller.dto.QRLoginResponse;
+import com.feijimiao.xianyuassistant.controller.dto.QRStatusResponse;
 
 import java.util.Map;
 

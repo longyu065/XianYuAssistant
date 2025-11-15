@@ -1,7 +1,7 @@
 package com.feijimiao.xianyuassistant.controller;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
-import com.feijimiao.xianyuassistant.model.dto.*;
+import com.feijimiao.xianyuassistant.controller.dto.*;
 import com.feijimiao.xianyuassistant.service.ItemService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

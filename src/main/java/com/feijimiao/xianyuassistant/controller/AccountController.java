@@ -3,16 +3,16 @@ package com.feijimiao.xianyuassistant.controller;
 import com.feijimiao.xianyuassistant.common.ResultObject;
 import com.feijimiao.xianyuassistant.entity.XianyuAccount;
 import com.feijimiao.xianyuassistant.mapper.XianyuAccountMapper;
-import com.feijimiao.xianyuassistant.model.dto.AccountReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.AddAccountRespDTO;
-import com.feijimiao.xianyuassistant.model.dto.DeleteAccountReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.DeleteAccountRespDTO;
-import com.feijimiao.xianyuassistant.model.dto.GetAccountDetailReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.GetAccountDetailRespDTO;
-import com.feijimiao.xianyuassistant.model.dto.GetAccountListRespDTO;
-import com.feijimiao.xianyuassistant.model.dto.ManualAddAccountReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.UpdateAccountReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.UpdateAccountRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.AccountReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.AddAccountRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.DeleteAccountReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.DeleteAccountRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.GetAccountDetailReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.GetAccountDetailRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.GetAccountListRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.ManualAddAccountReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.UpdateAccountReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.UpdateAccountRespDTO;
 import com.feijimiao.xianyuassistant.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -222,6 +222,7 @@ public class AccountController {
             return ResultObject.failed("获取账号详情失败: " + e.getMessage());
         }
     }
+
 
 
 }

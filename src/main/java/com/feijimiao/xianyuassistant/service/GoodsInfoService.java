@@ -1,7 +1,7 @@
 package com.feijimiao.xianyuassistant.service;
 
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
-import com.feijimiao.xianyuassistant.model.dto.ItemDTO;
+import com.feijimiao.xianyuassistant.controller.dto.ItemDTO;
 
 import java.util.List;
 

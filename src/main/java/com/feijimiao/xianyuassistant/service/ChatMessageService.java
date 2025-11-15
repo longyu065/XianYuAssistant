@@ -2,8 +2,8 @@ package com.feijimiao.xianyuassistant.service;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
-import com.feijimiao.xianyuassistant.model.dto.MsgListReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.MsgListRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.MsgListReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.MsgListRespDTO;
 import java.util.List;
 import java.util.Map;
 

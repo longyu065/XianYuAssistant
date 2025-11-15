@@ -1,8 +1,8 @@
 package com.feijimiao.xianyuassistant.controller;
 
 import com.feijimiao.xianyuassistant.common.ResultObject;
-import com.feijimiao.xianyuassistant.model.dto.MsgListReqDTO;
-import com.feijimiao.xianyuassistant.model.dto.MsgListRespDTO;
+import com.feijimiao.xianyuassistant.controller.dto.MsgListReqDTO;
+import com.feijimiao.xianyuassistant.controller.dto.MsgListRespDTO;
 import com.feijimiao.xianyuassistant.service.ChatMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
