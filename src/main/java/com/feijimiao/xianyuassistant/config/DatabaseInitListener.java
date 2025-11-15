@@ -192,6 +192,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "xianyu_account_id BIGINT NOT NULL, " +
             "xianyu_goods_id BIGINT, " +
             "xy_goods_id VARCHAR(100) NOT NULL, " +
+            "pnm_id VARCHAR(100) NOT NULL, " +
             "buyer_user_id VARCHAR(100), " +
             "buyer_user_name VARCHAR(100), " +
             "content TEXT, " +
@@ -281,6 +282,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         List<ColumnDef> deliveryRecordColumns = new ArrayList<>();
         deliveryRecordColumns.add(new ColumnDef("content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN content TEXT"));
         deliveryRecordColumns.add(new ColumnDef("buyer_user_name", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN buyer_user_name VARCHAR(100)"));
+        deliveryRecordColumns.add(new ColumnDef("pnm_id", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN pnm_id VARCHAR(100)"));
         tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
         
         int addedCount = 0;
@@ -302,6 +304,12 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
                     log.info("  ➕ 添加字段: {}.{}", tableName, column.name);
                     stmt.execute(column.alterSql);
                     addedCount++;
+                    
+                    // 特殊处理：如果是 xianyu_goods_auto_delivery_record 表的 pnm_id 字段
+                    if ("xianyu_goods_auto_delivery_record".equals(tableName) && "pnm_id".equals(column.name)) {
+                        log.info("  🔄 为现有记录设置 pnm_id 默认值...");
+                        stmt.execute("UPDATE xianyu_goods_auto_delivery_record SET pnm_id = 'LEGACY_' || id WHERE pnm_id IS NULL");
+                    }
                 } else {
                     log.debug("  ✓ 字段已存在: {}.{}", tableName, column.name);
                 }
@@ -391,6 +399,10 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_state ON xianyu_goods_auto_delivery_record(state)");
         requiredIndexes.put("idx_auto_delivery_record_create_time",
             "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_create_time ON xianyu_goods_auto_delivery_record(create_time)");
+        requiredIndexes.put("idx_auto_delivery_record_pnm_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_pnm_id ON xianyu_goods_auto_delivery_record(pnm_id)");
+        requiredIndexes.put("idx_auto_delivery_record_unique",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_delivery_record_unique ON xianyu_goods_auto_delivery_record(xianyu_account_id, pnm_id)");
         
         // 自动回复配置表索引
         requiredIndexes.put("idx_auto_reply_config_account_id",

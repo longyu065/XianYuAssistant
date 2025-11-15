@@ -17,3 +17,4 @@ java后端规范
 2、所有接口都使用post请求，不要使用其他请求，且返回值都用ResultObject包装，其中泛型也要定义一个包装类按规范：XXXRespDTO取名，同时接口入参都要包装成xxxReqDTO，所有接口不能共用DTO对象
 3、数据操作使用现有的mybatis-plus，遵循mybatis规范，日志使用@slf4j，报错统一
 4、自定义的业务报错都使用BusinessException抛出
+5、每次修改数据库表结构，要修改启动时的数据库检查逻辑

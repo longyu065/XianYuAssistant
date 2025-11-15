@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS xianyu_goods_auto_delivery_record (
     xianyu_account_id BIGINT NOT NULL,                -- 闲鱼账号ID
     xianyu_goods_id BIGINT,                           -- 本地闲鱼商品ID
     xy_goods_id VARCHAR(100) NOT NULL,                -- 闲鱼的商品ID
+    pnm_id VARCHAR(100) NOT NULL,                     -- 消息pnmid，用于防止重复发货
     buyer_user_id VARCHAR(100),                       -- 买家用户ID
     buyer_user_name VARCHAR(100),                     -- 买家用户名称
     content TEXT,                                     -- 发货消息内容
@@ -196,6 +197,11 @@ CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_account_id ON xianyu_goods_a
 CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_xy_goods_id ON xianyu_goods_auto_delivery_record(xy_goods_id);
 CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_state ON xianyu_goods_auto_delivery_record(state);
 CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_create_time ON xianyu_goods_auto_delivery_record(create_time);
+CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_pnm_id ON xianyu_goods_auto_delivery_record(pnm_id);
+
+-- 创建唯一索引，防止同一消息重复发货
+CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_delivery_record_unique 
+ON xianyu_goods_auto_delivery_record(xianyu_account_id, pnm_id);
 
 -- 商品自动回复配置表
 CREATE TABLE IF NOT EXISTS xianyu_goods_auto_reply_config (

@@ -129,24 +129,36 @@ public class ChatMessageEventAutoDeliveryListener {
             record.setXianyuAccountId(message.getXianyuAccountId());
             record.setXianyuGoodsId(goodsInfo.getId()); // 设置本地商品表ID
             record.setXyGoodsId(message.getXyGoodsId()); // 设置闲鱼商品ID
+            record.setPnmId(message.getPnmId()); // 设置消息pnmId，用于防重复
             record.setBuyerUserId(message.getSenderUserId());
             record.setBuyerUserName(buyerUserName);
             record.setContent(null); // 内容稍后设置
             record.setState(0); // 0=待发货
             
-            int result = autoDeliveryRecordMapper.insert(record);
+            int result;
+            try {
+                result = autoDeliveryRecordMapper.insert(record);
+            } catch (Exception e) {
+                // 检查是否是唯一约束冲突（pnm_id重复）
+                if (e.getMessage() != null && e.getMessage().contains("UNIQUE constraint failed")) {
+                    log.info("【账号{}】消息已处理过，跳过自动发货: pnmId={}, xyGoodsId={}", 
+                            message.getXianyuAccountId(), message.getPnmId(), message.getXyGoodsId());
+                    return; // 消息已处理，直接返回
+                }
+                throw e; // 其他异常继续抛出
+            }
             
             if (result > 0) {
-                log.info("【账号{}】创建发货记录成功: recordId={}, xyGoodsId={}, buyerUserName={}, state=0（待发货）", 
-                        message.getXianyuAccountId(), record.getId(), 
+                log.info("【账号{}】创建发货记录成功: recordId={}, pnmId={}, xyGoodsId={}, buyerUserName={}, state=0（待发货）", 
+                        message.getXianyuAccountId(), record.getId(), message.getPnmId(),
                         message.getXyGoodsId(), buyerUserName);
                 
                 // 执行自动发货
                 executeAutoDelivery(record.getId(), message.getXianyuAccountId(), 
                         message.getXyGoodsId(), message.getSId());
             } else {
-                log.error("【账号{}】创建发货记录失败: xyGoodsId={}", 
-                        message.getXianyuAccountId(), message.getXyGoodsId());
+                log.error("【账号{}】创建发货记录失败: pnmId={}, xyGoodsId={}", 
+                        message.getXianyuAccountId(), message.getPnmId(), message.getXyGoodsId());
             }
             
         } catch (Exception e) {

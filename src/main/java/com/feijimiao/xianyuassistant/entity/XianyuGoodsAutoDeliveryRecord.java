@@ -29,6 +29,11 @@ public class XianyuGoodsAutoDeliveryRecord {
     private String xyGoodsId;
     
     /**
+     * 消息pnmid，用于防止重复发货
+     */
+    private String pnmId;
+    
+    /**
      * 买家用户ID
      */
     private String buyerUserId;

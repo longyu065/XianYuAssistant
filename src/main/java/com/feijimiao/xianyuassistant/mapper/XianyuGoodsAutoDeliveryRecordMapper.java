@@ -14,8 +14,8 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
     /**
      * 插入记录
      */
-    @Insert("INSERT INTO xianyu_goods_auto_delivery_record (xianyu_account_id, xianyu_goods_id, xy_goods_id, buyer_user_id, buyer_user_name, content, state) " +
-            "VALUES (#{xianyuAccountId}, #{xianyuGoodsId}, #{xyGoodsId}, #{buyerUserId}, #{buyerUserName}, #{content}, #{state})")
+    @Insert("INSERT INTO xianyu_goods_auto_delivery_record (xianyu_account_id, xianyu_goods_id, xy_goods_id, pnm_id, buyer_user_id, buyer_user_name, content, state) " +
+            "VALUES (#{xianyuAccountId}, #{xianyuGoodsId}, #{xyGoodsId}, #{pnmId}, #{buyerUserId}, #{buyerUserName}, #{content}, #{state})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(XianyuGoodsAutoDeliveryRecord record);
     
