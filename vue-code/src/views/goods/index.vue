@@ -282,15 +282,15 @@ onMounted(() => {
         style="width: 100%"
         size="small"
       >
-        <el-table-column type="index" label="序号" width="50" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         
-        <el-table-column prop="item.xyGoodId" label="商品ID" width="120">
+        <el-table-column prop="item.xyGoodId" label="商品ID" width="140">
           <template #default="{ row }">
             <div class="goods-id">{{ row.item.xyGoodId }}</div>
           </template>
         </el-table-column>
         
-        <el-table-column label="商品图片" width="60">
+        <el-table-column label="商品图片" width="80" align="center">
           <template #default="{ row }">
             <el-image
               :src="row.item.coverPic"
@@ -301,7 +301,7 @@ onMounted(() => {
           </template>
         </el-table-column>
         
-        <el-table-column prop="item.title" label="商品标题" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="item.title" label="商品标题" min-width="200" show-overflow-tooltip />
         
         <el-table-column label="价格" width="100" align="right">
           <template #default="{ row }">

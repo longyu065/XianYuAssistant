@@ -47,3 +47,20 @@ export function updateCookie(data: { xianyuAccountId: number; cookieText: string
     data
   });
 }
+
+// 发送消息请求参数
+export interface SendMessageRequest {
+  xianyuAccountId: number;
+  cid: string;  // 会话ID (即 sid)
+  toId: string;  // 接收方ID (即 senderUserId)
+  text: string;  // 消息内容（注意：后端接收的参数名是 text，不是 content）
+}
+
+// 发送消息
+export function sendMessage(data: SendMessageRequest) {
+  return request<ApiResponse<any>>({
+    url: '/websocket/sendMessage',
+    method: 'POST',
+    data
+  });
+}

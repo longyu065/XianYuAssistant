@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { getAccountList } from '@/api/account';
 import { getMessageList } from '@/api/message';
 import { getGoodsList } from '@/api/goods';
-import { showError, showInfo } from '@/utils';
+import { sendMessage } from '@/api/websocket';
+import { showError, showInfo, showSuccess } from '@/utils';
 import type { Account } from '@/types';
 import type { ChatMessage } from '@/api/message';
 import type { GoodsItemWithConfig } from '@/api/goods';
@@ -24,6 +25,12 @@ const goodsCurrentPage = ref(1);
 const goodsTotal = ref(0);
 const goodsLoading = ref(false);
 const goodsListRef = ref<HTMLElement | null>(null);
+
+// 快速回复相关
+const quickReplyDialogVisible = ref(false);
+const quickReplyMessage = ref('');
+const quickReplySending = ref(false);
+const currentReplyMessage = ref<ChatMessage | null>(null);
 
 // 获取当前选中账号的UNB
 const getCurrentAccountUnb = computed(() => {
@@ -225,6 +232,61 @@ const formatMessageTime = (timestamp: number) => {
   });
 };
 
+// 打开快速回复对话框
+const openQuickReply = (message: ChatMessage) => {
+  currentReplyMessage.value = message;
+  quickReplyMessage.value = '';
+  quickReplyDialogVisible.value = true;
+};
+
+// 发送快速回复
+const handleQuickReply = async () => {
+  if (!quickReplyMessage.value.trim()) {
+    showInfo('请输入回复内容');
+    return;
+  }
+
+  if (!currentReplyMessage.value || !selectedAccountId.value) {
+    showError('消息信息不完整');
+    return;
+  }
+
+  if (!currentReplyMessage.value.sid) {
+    showError('会话ID(sid)不存在，无法发送消息');
+    return;
+  }
+
+  if (!currentReplyMessage.value.senderUserId) {
+    showError('接收方ID(senderUserId)不存在，无法发送消息');
+    return;
+  }
+
+  quickReplySending.value = true;
+  try {
+    const response = await sendMessage({
+      xianyuAccountId: selectedAccountId.value,
+      cid: currentReplyMessage.value.sid,  // 使用 sid 作为会话ID
+      toId: currentReplyMessage.value.senderUserId,  // 使用 senderUserId 作为接收方ID
+      text: quickReplyMessage.value.trim()  // 注意：参数名是 text，不是 content
+    });
+
+    if (response.code === 0 || response.code === 200) {
+      showSuccess('消息发送成功');
+      quickReplyDialogVisible.value = false;
+      quickReplyMessage.value = '';
+      currentReplyMessage.value = null;
+      // 刷新消息列表
+      loadMessages();
+    }
+    // 注意：错误情况已经在请求拦截器中处理并显示了，这里不需要再次显示
+  } catch (error: any) {
+    console.error('发送消息失败:', error);
+    // 请求拦截器已经显示了错误消息，这里不需要重复显示
+  } finally {
+    quickReplySending.value = false;
+  }
+};
+
 onMounted(() => {
   loadAccounts();
   // 等待DOM渲染完成后添加滚动监听
@@ -376,13 +438,12 @@ onUnmounted(() => {
             <el-table-column label="操作" width="100" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button
-                  v-if="row.reminderUrl"
+                  v-if="isUserMessage(row)"
                   type="primary"
-                  link
                   size="small"
-                  @click="() => window.open(row.reminderUrl, '_blank')"
+                  @click="openQuickReply(row)"
                 >
-                  查看链接
+                  快速回复
                 </el-button>
                 <span v-else class="no-action">-</span>
               </template>
@@ -401,6 +462,47 @@ onUnmounted(() => {
         </el-card>
       </div>
     </div>
+
+    <!-- 快速回复对话框 -->
+    <el-dialog
+      v-model="quickReplyDialogVisible"
+      title="快速回复"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div class="quick-reply-content">
+        <div class="reply-info">
+          <div class="info-item">
+            <span class="info-label">回复给：</span>
+            <span class="info-value">{{ currentReplyMessage?.senderUserName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">原消息：</span>
+            <span class="info-value">{{ currentReplyMessage?.msgContent }}</span>
+          </div>
+        </div>
+        
+        <el-input
+          v-model="quickReplyMessage"
+          type="textarea"
+          :rows="6"
+          placeholder="请输入回复内容..."
+          maxlength="500"
+          show-word-limit
+        />
+      </div>
+      
+      <template #footer>
+        <el-button @click="quickReplyDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="quickReplySending"
+          @click="handleQuickReply"
+        >
+          发送
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -593,5 +695,38 @@ onUnmounted(() => {
   padding: 10px 0;
   margin-top: 10px;
   border-top: 1px solid #ebeef5;
+}
+
+.quick-reply-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reply-info {
+  background-color: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.info-label {
+  color: #909399;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #303133;
+  flex: 1;
+  word-break: break-all;
 }
 </style>

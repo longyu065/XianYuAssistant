@@ -38,7 +38,8 @@ const recordsLoading = ref(false);
 const deliveryRecords = ref<any[]>([]);
 const recordsTotal = ref(0);
 const recordsPageNum = ref(1);
-const recordsPageSize = ref(10);
+const recordsPageSize = ref(20);
+const recordsExpanded = ref(false); // 记录表格是否展开全屏
 
 // 格式化时间
 const formatTime = (time: string) => {
@@ -391,74 +392,99 @@ onMounted(() => {
             </div>
           </template>
 
-          <div class="config-form" v-if="selectedGoods">
-            <div class="goods-title-section">
-              <div class="goods-title-text">{{ selectedGoods.item.title }}</div>
-              <el-button
-                type="primary"
-                size="small"
-                @click="viewGoodsDetail"
-              >
-                查看商品详情
-              </el-button>
-            </div>
+          <div class="config-form" v-if="selectedGoods" :class="{ 'records-expanded': recordsExpanded }">
+            <div class="config-content" v-show="!recordsExpanded">
+              <div class="goods-title-section">
+                <div class="goods-title-text">{{ selectedGoods.item.title }}</div>
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="viewGoodsDetail"
+                >
+                  查看商品详情
+                </el-button>
+              </div>
 
-            <el-form :model="configForm" label-width="100px">
-              <el-form-item label="自动发货">
-                <el-switch
-                  v-model="selectedGoods.xianyuAutoDeliveryOn"
-                  :active-value="1"
-                  :inactive-value="0"
-                  @change="toggleAutoDelivery"
-                />
-                <span class="switch-label">
-                  {{ selectedGoods.xianyuAutoDeliveryOn === 1 ? '已开启' : '已关闭' }}
-                </span>
-              </el-form-item>
-
-              <el-form-item label="发货类型">
-                <el-radio-group v-model="configForm.type">
-                  <el-radio :value="1">文本内容</el-radio>
-                  <el-radio :value="2">自定义</el-radio>
-                </el-radio-group>
-              </el-form-item>
-
-              <el-form-item label="发货内容">
-                <el-input
-                  v-model="configForm.autoDeliveryContent"
-                  type="textarea"
-                  :rows="8"
-                  placeholder="请输入自动发货内容，买家下单后将自动发送此内容"
-                  maxlength="1000"
-                  show-word-limit
-                />
-              </el-form-item>
-
-              <el-form-item>
-                <div class="save-config-container">
-                  <el-button type="primary" :loading="saving" @click="saveConfig">
-                    保存配置
-                  </el-button>
-                  <span v-if="currentConfig" class="last-update-time">
-                    上次更新: {{ formatTime(currentConfig.updateTime) }}
+              <el-form :model="configForm" label-width="100px">
+                <el-form-item label="自动发货">
+                  <el-switch
+                    v-model="selectedGoods.xianyuAutoDeliveryOn"
+                    :active-value="1"
+                    :inactive-value="0"
+                    @change="toggleAutoDelivery"
+                  />
+                  <span class="switch-label">
+                    {{ selectedGoods.xianyuAutoDeliveryOn === 1 ? '已开启' : '已关闭' }}
                   </span>
-                </div>
-              </el-form-item>
-            </el-form>
+                </el-form-item>
+
+                <el-form-item label="发货类型">
+                  <el-radio-group v-model="configForm.type">
+                    <el-radio :value="1">文本内容</el-radio>
+                    <el-radio :value="2">自定义</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+
+                <el-form-item label="发货内容">
+                  <el-input
+                    v-model="configForm.autoDeliveryContent"
+                    type="textarea"
+                    :rows="8"
+                    placeholder="请输入自动发货内容，买家下单后将自动发送此内容"
+                    maxlength="1000"
+                    show-word-limit
+                  />
+                </el-form-item>
+
+                <el-form-item>
+                  <div class="save-config-container">
+                    <el-button type="primary" :loading="saving" @click="saveConfig">
+                      保存配置
+                    </el-button>
+                    <span v-if="currentConfig" class="last-update-time">
+                      上次更新: {{ formatTime(currentConfig.updateTime) }}
+                    </span>
+                  </div>
+                </el-form-item>
+              </el-form>
+            </div>
 
             <!-- 自动发货记录表格 -->
             <div class="delivery-records-section">
               <div class="records-header">
-                <span class="records-title">自动发货记录</span>
-                <span class="records-count">共 {{ recordsTotal }} 条记录</span>
+                <div class="records-info">
+                  <span class="records-title">自动发货记录</span>
+                  <span class="records-count">共 {{ recordsTotal }} 条记录</span>
+                </div>
+                <div class="records-actions">
+                  <div class="records-pagination" v-if="recordsTotal > 0 && !recordsExpanded">
+                    <el-pagination
+                      v-model:current-page="recordsPageNum"
+                      v-model:page-size="recordsPageSize"
+                      :page-sizes="[10, 20, 50, 100]"
+                      :total="recordsTotal"
+                      layout="sizes, prev, pager, next"
+                      small
+                      @size-change="handleRecordsSizeChange"
+                      @current-change="handleRecordsPageChange"
+                    />
+                  </div>
+                  <el-button
+                    :icon="recordsExpanded ? 'ArrowDown' : 'ArrowUp'"
+                    size="small"
+                    @click="recordsExpanded = !recordsExpanded"
+                  >
+                    {{ recordsExpanded ? '收起' : '展开' }}
+                  </el-button>
+                </div>
               </div>
               
-              <div class="records-table" v-loading="recordsLoading">
+              <div class="records-table-wrapper" v-loading="recordsLoading">
                 <el-table
                   :data="deliveryRecords"
                   stripe
                   style="width: 100%"
-                  max-height="400"
+                  :max-height="recordsExpanded ? 'calc(100vh - 250px)' : 400"
                 >
                   <el-table-column type="index" label="ID" width="60" align="center" />
                   <el-table-column prop="buyerUserId" label="买家ID" width="120">
@@ -492,14 +518,15 @@ onMounted(() => {
                     <el-empty description="暂无发货记录" :image-size="80" />
                   </template>
                 </el-table>
-
-                <div class="pagination-container" v-if="recordsTotal > 0">
+                
+                <div class="pagination-container-bottom" v-if="recordsTotal > 0 && recordsExpanded">
                   <el-pagination
                     v-model:current-page="recordsPageNum"
                     v-model:page-size="recordsPageSize"
                     :page-sizes="[10, 20, 50, 100]"
                     :total="recordsTotal"
                     layout="total, sizes, prev, pager, next, jumper"
+                    small
                     @size-change="handleRecordsSizeChange"
                     @current-change="handleRecordsPageChange"
                   />
@@ -582,6 +609,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
+
+
 
 .card-header {
   display: flex;
@@ -673,6 +702,10 @@ onMounted(() => {
   padding: 0;
 }
 
+.config-content {
+  margin-bottom: 20px;
+}
+
 .goods-title-section {
   display: flex;
   justify-content: space-between;
@@ -725,11 +758,24 @@ onMounted(() => {
   border-top: 1px solid #ebeef5;
 }
 
+.config-form.records-expanded .delivery-records-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .records-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
+  gap: 15px;
+}
+
+.records-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .records-title {
@@ -743,8 +789,35 @@ onMounted(() => {
   color: #909399;
 }
 
-.records-table {
-  min-height: 200px;
+.records-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.records-pagination {
+  flex-shrink: 0;
+}
+
+.records-table-wrapper {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.config-form.records-expanded .records-table-wrapper {
+  margin-bottom: 0;
+}
+
+.pagination-container-bottom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #fafafa;
+  border-top: 1px solid #ebeef5;
+  flex-shrink: 0;
 }
 
 .buyer-info {
@@ -769,11 +842,5 @@ onMounted(() => {
   color: #606266;
   line-height: 1.5;
   word-break: break-all;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 15px;
 }
 </style>
