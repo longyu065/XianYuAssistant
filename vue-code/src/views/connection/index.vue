@@ -328,117 +328,137 @@ onUnmounted(() => {
         </div>
 
         <div v-else v-loading="statusLoading" class="status-content">
-          <!-- 连接状态卡片 - 三列布局 -->
-          <div v-if="connectionStatus" class="status-cards-grid">
-            <!-- 连接信息卡片 -->
-            <div class="info-card">
-              <div class="card-header">
-                <span class="card-title">连接信息</span>
+          <!-- 连接状态大卡片 - 包含所有依赖信息 -->
+          <div v-if="connectionStatus" class="connection-main-card">
+            <!-- 主标题区域 -->
+            <div class="main-card-header">
+              <div class="header-left">
+                <div class="icon-wrapper-large" :class="connectionStatus.connected ? 'icon-success' : 'icon-danger'">
+                  <span class="icon-large">{{ connectionStatus.connected ? '✓' : '✕' }}</span>
+                </div>
+                <div class="header-info">
+                  <h2 class="main-title">连接状态</h2>
+                  <p class="main-subtitle">账号 ID: {{ connectionStatus.xianyuAccountId }} · {{ connectionStatus.status }}</p>
+                  <p class="main-note">未启动连接将无法收到消息以及自动化处理</p>
+                </div>
+              </div>
+              <div class="header-right">
                 <el-tag
                   :type="connectionStatus.connected ? 'success' : 'danger'"
-                  size="small"
+                  size="large"
                   effect="dark"
+                  round
+                  class="status-tag-large"
                 >
-                  {{ connectionStatus.connected ? '已连接' : '未连接' }}
+                  {{ connectionStatus.connected ? '● 已连接' : '● 未连接' }}
                 </el-tag>
               </div>
-              <div class="card-content">
-                <div class="info-item">
-                  <span class="info-label">账号ID</span>
-                  <span class="info-value">{{ connectionStatus.xianyuAccountId }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">状态</span>
-                  <span class="info-value">{{ connectionStatus.status }}</span>
-                </div>
-                <div class="card-actions">
-                  <el-button
-                    v-if="connectionStatus.connected"
-                    type="danger"
-                    size="default"
-                    @click="handleStopConnection"
-                    style="width: 100%"
+            </div>
+
+            <!-- 详细信息区域 -->
+            <div class="details-grid">
+              <!-- Cookie 详情 -->
+              <div class="detail-section cookie-section">
+                <div class="section-header">
+                  <div class="section-icon">🍪</div>
+                  <div class="section-title-group">
+                    <h3 class="section-title">Cookie 凭证</h3>
+                    <p class="section-note">用于识别账号，如果过期无法使用任何功能</p>
+                  </div>
+                  <el-tag 
+                    :type="getCookieStatusType(connectionStatus.cookieStatus)" 
+                    size="small"
+                    round
                   >
-                    断开连接
-                  </el-button>
-                  <el-button
-                    v-else
-                    type="primary"
-                    size="default"
-                    @click="handleStartConnection"
-                    style="width: 100%"
+                    {{ getCookieStatusText(connectionStatus.cookieStatus) }}
+                  </el-tag>
+                </div>
+                <div class="section-body">
+                  <div class="info-box">
+                    <div class="info-box-label">Cookie 内容</div>
+                    <div class="info-box-value cookie-value">
+                      {{ connectionStatus.cookieText || '未获取到Cookie' }}
+                    </div>
+                    <div class="info-box-meta" v-if="connectionStatus.cookieText">
+                      长度: {{ connectionStatus.cookieText.length }} 字符
+                    </div>
+                  </div>
+                  <div class="section-actions">
+                    <el-button
+                      type="warning"
+                      size="small"
+                      @click="handleRefreshCookie"
+                    >
+                      📱 扫码刷新
+                    </el-button>
+                    <el-button
+                      type="primary"
+                      plain
+                      size="small"
+                      @click="handleManualUpdateCookie"
+                    >
+                      ✏️ 手动更新
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Token 详情 -->
+              <div class="detail-section token-section">
+                <div class="section-header">
+                  <div class="section-icon">🔑</div>
+                  <div class="section-title-group">
+                    <h3 class="section-title">WebSocket Token</h3>
+                    <p class="section-note">这个是收取消息的凭证，如果异常，可能是账号被锁人机验证，需要隔段时间再试一试</p>
+                  </div>
+                  <el-tag 
+                    :type="getTokenStatusType(connectionStatus.tokenExpireTime)" 
+                    size="small"
+                    round
                   >
-                    启动连接
-                  </el-button>
+                    {{ getTokenStatusText(connectionStatus.tokenExpireTime) }}
+                  </el-tag>
+                </div>
+                <div class="section-body">
+                  <div class="info-box">
+                    <div class="info-box-label">⏰ 过期时间</div>
+                    <div class="info-box-value time-value">
+                      {{ formatTimestamp(connectionStatus.tokenExpireTime) }}
+                    </div>
+                  </div>
+                  <div class="info-box">
+                    <div class="info-box-label">Token 内容</div>
+                    <div class="info-box-value token-value">
+                      {{ connectionStatus.websocketToken || '未获取到Token' }}
+                    </div>
+                    <div class="info-box-meta" v-if="connectionStatus.websocketToken">
+                      长度: {{ connectionStatus.websocketToken.length }} 字符
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Cookie信息卡片 -->
-            <div class="info-card">
-              <div class="card-header">
-                <span class="card-title">Cookie信息</span>
-                <el-tag :type="getCookieStatusType(connectionStatus.cookieStatus)" size="small">
-                  {{ getCookieStatusText(connectionStatus.cookieStatus) }}
-                </el-tag>
-              </div>
-              <div class="card-content">
-                <div class="info-item info-item-full">
-                  <span class="info-label">Cookie值</span>
-                  <el-input
-                    :model-value="connectionStatus.cookieText || '未获取到Cookie'"
-                    type="textarea"
-                    :rows="2"
-                    readonly
-                    class="info-textarea"
-                  />
-                </div>
-                <div class="card-actions">
-                  <el-button
-                    type="warning"
-                    size="default"
-                    @click="handleRefreshCookie"
-                    class="action-btn"
-                  >
-                    扫码刷新
-                  </el-button>
-                  <el-button
-                    type="primary"
-                    size="default"
-                    plain
-                    @click="handleManualUpdateCookie"
-                    class="action-btn"
-                  >
-                    手动更新
-                  </el-button>
-                </div>
-              </div>
-            </div>
-
-            <!-- WebSocket Token卡片 -->
-            <div class="info-card">
-              <div class="card-header">
-                <span class="card-title">WebSocket Token</span>
-                <el-tag :type="getTokenStatusType(connectionStatus.tokenExpireTime)" size="small">
-                  {{ getTokenStatusText(connectionStatus.tokenExpireTime) }}
-                </el-tag>
-              </div>
-              <div class="card-content">
-                <div class="info-item">
-                  <span class="info-label">过期时间</span>
-                  <span class="info-value info-value-small">{{ formatTimestamp(connectionStatus.tokenExpireTime) }}</span>
-                </div>
-                <div class="info-item info-item-full">
-                  <span class="info-label">Token值</span>
-                  <el-input
-                    :model-value="connectionStatus.websocketToken || '未获取到Token'"
-                    type="textarea"
-                    :rows="2"
-                    readonly
-                    class="info-textarea"
-                  />
-                </div>
-              </div>
+            <!-- 操作区域 -->
+            <div class="main-actions">
+              <el-button
+                v-if="connectionStatus.connected"
+                type="danger"
+                size="default"
+                @click="handleStopConnection"
+                class="main-action-btn"
+              >
+                ⏸ 断开连接
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                size="default"
+                @click="handleStartConnection"
+                class="main-action-btn"
+              >
+                ▶ 启动连接
+              </el-button>
             </div>
           </div>
 
@@ -622,122 +642,259 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-/* 三列卡片网格布局 */
-.status-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+/* 连接状态主卡片 */
+.connection-main-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12px;
+  border: 2px solid #409eff;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.12);
+  overflow: hidden;
 }
 
-.info-card {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #e4e7ed;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.card-header {
+/* 主标题区域 */
+.main-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
-  gap: 8px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ecf5ff 0%, #ffffff 100%);
+  border-bottom: 2px solid #d9ecff;
 }
 
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-  white-space: nowrap;
-}
-
-.card-content {
+.header-left {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
-  flex: 1;
 }
 
-.card-actions {
-  margin-top: auto;
-  padding-top: 8px;
+.icon-wrapper-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.action-btn {
+.icon-success {
+  background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+}
+
+.icon-danger {
+  background: linear-gradient(135deg, #f56c6c 0%, #f78989 100%);
+}
+
+.icon-large {
+  font-size: 28px;
+  font-weight: bold;
+  color: white;
+}
+
+.header-info {
   flex: 1;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.main-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #303133;
+  margin: 0 0 4px 0;
+  letter-spacing: 0.3px;
 }
 
-.info-item-full {
-  flex: 1;
-}
-
-.info-label {
+.main-subtitle {
   font-size: 12px;
   color: #909399;
+  margin: 0 0 3px 0;
   font-weight: 500;
 }
 
-.info-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-  word-break: break-all;
-}
-
-.info-value-small {
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.info-textarea :deep(.el-textarea__inner) {
-  font-family: 'Courier New', Consolas, monospace;
+.main-note {
   font-size: 11px;
+  color: #f56c6c;
+  margin: 0;
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.status-tag-large {
+  font-size: 14px;
+  padding: 8px 16px;
+  font-weight: 600;
+}
+
+/* 详细信息网格 */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.detail-section {
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #e4e7ed;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.detail-section:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.cookie-section {
+  border-color: #e6a23c;
+}
+
+.token-section {
+  border-color: #67c23a;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f5f7fa;
+}
+
+.section-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.section-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #303133;
+  margin: 0 0 4px 0;
+}
+
+.section-note {
+  font-size: 11px;
+  color: #909399;
+  margin: 0;
   line-height: 1.4;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-box {
   background: #f8f9fa;
-  border-color: #dcdfe6;
-  resize: none;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+}
+
+.info-box-label {
+  font-size: 10px;
+  color: #909399;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.info-box-value {
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 10px;
+  color: #606266;
+  line-height: 1.5;
+  word-break: break-all;
+  background: white;
   padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.cookie-value,
+.token-value {
+  font-size: 10px;
+}
+
+.time-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.info-box-meta {
+  font-size: 10px;
+  color: #909399;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.section-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.section-actions .el-button {
+  flex: 1;
+}
+
+/* 主操作区域 */
+.main-actions {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-top: 1px solid #e4e7ed;
+}
+
+.main-action-btn {
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .logs-section {
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
 .logs-header {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #303133;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .logs-container {
   background: #2c3e50;
   color: #ecf0f1;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   font-family: 'Courier New', Consolas, monospace;
-  font-size: 13px;
-  max-height: 300px;
+  font-size: 12px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
 .log-entry {
-  margin-bottom: 8px;
-  line-height: 1.6;
+  margin-bottom: 6px;
+  line-height: 1.5;
 }
 
 .log-entry:last-child {
@@ -746,7 +903,8 @@ onUnmounted(() => {
 
 .log-time {
   color: #95a5a6;
-  margin-right: 8px;
+  margin-right: 6px;
+  font-size: 11px;
 }
 
 .log-message {
@@ -760,7 +918,8 @@ onUnmounted(() => {
 .log-empty {
   text-align: center;
   color: #95a5a6;
-  padding: 20px;
+  padding: 16px;
+  font-size: 12px;
 }
 
 /* 滚动条样式 */
@@ -780,23 +939,17 @@ onUnmounted(() => {
 }
 
 /* 响应式布局 */
-@media (max-width: 1400px) {
-  .status-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .info-card:last-child {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 1024px) {
-  .status-cards-grid {
+@media (max-width: 1200px) {
+  .details-grid {
     grid-template-columns: 1fr;
   }
   
-  .info-card:last-child {
-    grid-column: auto;
+  .dependency-flow {
+    flex-wrap: wrap;
+  }
+  
+  .flow-arrow {
+    display: none;
   }
 }
 
@@ -814,8 +967,27 @@ onUnmounted(() => {
     min-width: auto;
   }
   
-  .status-cards-grid {
-    grid-template-columns: 1fr;
+  .main-card-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .dependency-flow {
+    padding: 20px;
+  }
+  
+  .flow-content {
+    padding: 12px 16px;
+  }
+  
+  .details-grid {
+    padding: 20px;
   }
 }
 </style>

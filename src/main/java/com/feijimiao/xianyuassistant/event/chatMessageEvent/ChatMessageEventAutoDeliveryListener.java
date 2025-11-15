@@ -1,12 +1,15 @@
 package com.feijimiao.xianyuassistant.event.chatMessageEvent;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsAutoDeliveryConfig;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsAutoDeliveryRecord;
 import com.feijimiao.xianyuassistant.entity.XianyuGoodsConfig;
+import com.feijimiao.xianyuassistant.entity.XianyuGoodsInfo;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryConfigMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryRecordMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsConfigMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
 import com.feijimiao.xianyuassistant.service.WebSocketService;
 import com.feijimiao.xianyuassistant.utils.HumanLikeDelayUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,9 @@ public class ChatMessageEventAutoDeliveryListener {
     
     @Autowired
     private XianyuGoodsAutoDeliveryRecordMapper autoDeliveryRecordMapper;
+    
+    @Autowired
+    private XianyuGoodsInfoMapper goodsInfoMapper;
     
     @Autowired
     private WebSocketService webSocketService;
@@ -103,10 +109,26 @@ public class ChatMessageEventAutoDeliveryListener {
             log.info("【账号{}】提取买家信息: buyerUserId={}, buyerUserName={}", 
                     message.getXianyuAccountId(), message.getSenderUserId(), buyerUserName);
             
+            // 根据xy_goods_id查询xianyu_goods表获取表ID
+            QueryWrapper<XianyuGoodsInfo> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("xy_good_id", message.getXyGoodsId());
+            queryWrapper.eq("xianyu_account_id", message.getXianyuAccountId());
+            XianyuGoodsInfo goodsInfo = goodsInfoMapper.selectOne(queryWrapper);
+            
+            if (goodsInfo == null) {
+                log.warn("【账号{}】未找到商品信息: xyGoodsId={}", 
+                        message.getXianyuAccountId(), message.getXyGoodsId());
+                return;
+            }
+            
+            log.info("【账号{}】查询到商品信息: xianyuGoodsId={}, title={}", 
+                    message.getXianyuAccountId(), goodsInfo.getId(), goodsInfo.getTitle());
+            
             // 创建发货记录（state=0，待发货）
             XianyuGoodsAutoDeliveryRecord record = new XianyuGoodsAutoDeliveryRecord();
             record.setXianyuAccountId(message.getXianyuAccountId());
-            record.setXyGoodsId(message.getXyGoodsId());
+            record.setXianyuGoodsId(goodsInfo.getId()); // 设置本地商品表ID
+            record.setXyGoodsId(message.getXyGoodsId()); // 设置闲鱼商品ID
             record.setBuyerUserId(message.getSenderUserId());
             record.setBuyerUserName(buyerUserName);
             record.setContent(null); // 内容稍后设置
@@ -149,7 +171,7 @@ public class ChatMessageEventAutoDeliveryListener {
             XianyuGoodsConfig goodsConfig = goodsConfigMapper.selectByAccountAndGoodsId(accountId, xyGoodsId);
             if (goodsConfig == null || goodsConfig.getXianyuAutoDeliveryOn() != 1) {
                 log.info("【账号{}】商品未开启自动发货: xyGoodsId={}", accountId, xyGoodsId);
-                updateRecordState(recordId, -1);
+                updateRecordState(recordId, -1, null);
                 return;
             }
             
@@ -158,7 +180,7 @@ public class ChatMessageEventAutoDeliveryListener {
             if (deliveryConfig == null || deliveryConfig.getAutoDeliveryContent() == null || 
                     deliveryConfig.getAutoDeliveryContent().isEmpty()) {
                 log.warn("【账号{}】商品未配置自动发货内容: xyGoodsId={}", accountId, xyGoodsId);
-                updateRecordState(recordId, -1);
+                updateRecordState(recordId, -1, null);
                 return;
             }
             
@@ -178,34 +200,35 @@ public class ChatMessageEventAutoDeliveryListener {
             // 5. 发送消息
             boolean success = webSocketService.sendMessage(accountId, cid, toId, content);
             
-            // 6. 更新发货记录状态
+            // 6. 更新发货记录状态和内容
             if (success) {
                 log.info("【账号{}】自动发货成功: recordId={}, xyGoodsId={}, content={}", 
                         accountId, recordId, xyGoodsId, content);
-                updateRecordState(recordId, 1);
+                updateRecordState(recordId, 1, content);
             } else {
                 log.error("【账号{}】自动发货失败: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId);
-                updateRecordState(recordId, -1);
+                updateRecordState(recordId, -1, content);
             }
             
         } catch (Exception e) {
             log.error("【账号{}】执行自动发货异常: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId, e);
-            updateRecordState(recordId, -1);
+            updateRecordState(recordId, -1, null);
         }
     }
     
     /**
-     * 更新发货记录状态
+     * 更新发货记录状态和内容
      * 
      * @param recordId 发货记录ID
      * @param state 状态（0=待发货，1=成功，-1=失败）
+     * @param content 发货内容
      */
-    private void updateRecordState(Long recordId, Integer state) {
+    private void updateRecordState(Long recordId, Integer state, String content) {
         try {
-            autoDeliveryRecordMapper.updateState(recordId, state);
-            log.info("更新发货记录状态: recordId={}, state={}", recordId, state);
+            autoDeliveryRecordMapper.updateStateAndContent(recordId, state, content);
+            log.info("更新发货记录状态和内容: recordId={}, state={}, content={}", recordId, state, content);
         } catch (Exception e) {
-            log.error("更新发货记录状态失败: recordId={}, state={}", recordId, state, e);
+            log.error("更新发货记录状态和内容失败: recordId={}, state={}, content={}", recordId, state, content, e);
         }
     }
 }

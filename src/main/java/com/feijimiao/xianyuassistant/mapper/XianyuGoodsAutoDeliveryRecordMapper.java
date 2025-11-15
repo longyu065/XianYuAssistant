@@ -80,4 +80,10 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
      */
     @Update("UPDATE xianyu_goods_auto_delivery_record SET state = #{state} WHERE id = #{id}")
     int updateState(@Param("id") Long id, @Param("state") Integer state);
+    
+    /**
+     * 更新发货记录状态和内容
+     */
+    @Update("UPDATE xianyu_goods_auto_delivery_record SET state = #{state}, content = #{content} WHERE id = #{id}")
+    int updateStateAndContent(@Param("id") Long id, @Param("state") Integer state, @Param("content") String content);
 }
