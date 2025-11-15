@@ -84,11 +84,12 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
     }
     
     @Override
-    public void recordAutoDelivery(Long accountId, String xyGoodsId, String buyerUserId, String content, Integer state) {
+    public void recordAutoDelivery(Long accountId, String xyGoodsId, String buyerUserId, String buyerUserName, String content, Integer state) {
         XianyuGoodsAutoDeliveryRecord record = new XianyuGoodsAutoDeliveryRecord();
         record.setXianyuAccountId(accountId);
         record.setXyGoodsId(xyGoodsId);
         record.setBuyerUserId(buyerUserId);
+        record.setBuyerUserName(buyerUserName);
         record.setContent(content);
         record.setState(state);
         
@@ -96,12 +97,13 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
     }
     
     /**
-     * 处理自动发货（带买家用户ID）
+     * 处理自动发货（带买家用户ID和用户名）
      */
     @Override
-    public void handleAutoDelivery(Long accountId, String xyGoodsId, String sId, String buyerUserId) {
+    public void handleAutoDelivery(Long accountId, String xyGoodsId, String sId, String buyerUserId, String buyerUserName) {
         try {
-            log.info("【账号{}】处理自动发货: xyGoodsId={}, sId={}, buyerUserId={}", accountId, xyGoodsId, sId, buyerUserId);
+            log.info("【账号{}】处理自动发货: xyGoodsId={}, sId={}, buyerUserId={}, buyerUserName={}", 
+                    accountId, xyGoodsId, sId, buyerUserId, buyerUserName);
             
             // 1. 检查商品是否开启自动发货
             XianyuGoodsConfig goodsConfig = getGoodsConfig(accountId, xyGoodsId);
@@ -115,7 +117,7 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             if (deliveryConfig == null || deliveryConfig.getAutoDeliveryContent() == null || 
                     deliveryConfig.getAutoDeliveryContent().isEmpty()) {
                 log.warn("【账号{}】商品未配置自动发货内容: xyGoodsId={}", accountId, xyGoodsId);
-                recordAutoDelivery(accountId, xyGoodsId, buyerUserId, null, 0);
+                recordAutoDelivery(accountId, xyGoodsId, buyerUserId, buyerUserName, null, 0);
                 return;
             }
             
@@ -142,18 +144,19 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             // 5. 发送消息
             boolean success = webSocketService.sendMessage(accountId, cid, toId, content);
             
-            // 6. 记录发货结果（传递买家用户ID）
-            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, content, success ? 1 : 0);
+            // 6. 记录发货结果（传递买家用户ID和用户名）
+            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, buyerUserName, content, success ? 1 : 0);
             
             if (success) {
-                log.info("【账号{}】自动发货成功: xyGoodsId={}, content={}", accountId, xyGoodsId, content);
+                log.info("【账号{}】自动发货成功: xyGoodsId={}, buyerUserName={}, content={}", 
+                        accountId, xyGoodsId, buyerUserName, content);
             } else {
                 log.error("【账号{}】自动发货失败: xyGoodsId={}", accountId, xyGoodsId);
             }
             
         } catch (Exception e) {
             log.error("【账号{}】自动发货异常: xyGoodsId={}", accountId, xyGoodsId, e);
-            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, null, 0);
+            recordAutoDelivery(accountId, xyGoodsId, buyerUserId, buyerUserName, null, 0);
         }
     }
     
@@ -283,5 +286,53 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
         } catch (Exception e) {
             log.error("【账号{}】记录自动回复失败", accountId, e);
         }
+    }
+    
+    @Override
+    public com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordRespDTO getAutoDeliveryRecords(
+            com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordReqDTO reqDTO) {
+        
+        Long accountId = reqDTO.getXianyuAccountId();
+        String xyGoodsId = reqDTO.getXyGoodsId();
+        int pageNum = reqDTO.getPageNum() != null ? reqDTO.getPageNum() : 1;
+        int pageSize = reqDTO.getPageSize() != null ? reqDTO.getPageSize() : 20;
+        
+        // 计算偏移量
+        int offset = (pageNum - 1) * pageSize;
+        
+        // 查询记录
+        List<XianyuGoodsAutoDeliveryRecord> records = autoDeliveryRecordMapper.selectByAccountIdWithPage(
+                accountId, xyGoodsId, pageSize, offset);
+        
+        // 统计总数
+        long total = autoDeliveryRecordMapper.countByAccountId(accountId, xyGoodsId);
+        
+        // 转换为DTO
+        List<com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordDTO> recordDTOs = new ArrayList<>();
+        for (XianyuGoodsAutoDeliveryRecord record : records) {
+            com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordDTO dto = 
+                    new com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordDTO();
+            dto.setId(record.getId());
+            dto.setXianyuAccountId(record.getXianyuAccountId());
+            dto.setXianyuGoodsId(record.getXianyuGoodsId());
+            dto.setXyGoodsId(record.getXyGoodsId());
+            dto.setGoodsTitle(record.getGoodsTitle());
+            dto.setBuyerUserId(record.getBuyerUserId());
+            dto.setBuyerUserName(record.getBuyerUserName());
+            dto.setContent(record.getContent());
+            dto.setState(record.getState());
+            dto.setCreateTime(record.getCreateTime());
+            recordDTOs.add(dto);
+        }
+        
+        // 构建响应
+        com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordRespDTO respDTO = 
+                new com.feijimiao.xianyuassistant.controller.dto.AutoDeliveryRecordRespDTO();
+        respDTO.setRecords(recordDTOs);
+        respDTO.setTotal(total);
+        respDTO.setPageNum(pageNum);
+        respDTO.setPageSize(pageSize);
+        
+        return respDTO;
     }
 }

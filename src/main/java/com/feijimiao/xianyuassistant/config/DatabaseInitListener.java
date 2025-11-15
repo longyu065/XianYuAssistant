@@ -193,6 +193,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "xianyu_goods_id BIGINT, " +
             "xy_goods_id VARCHAR(100) NOT NULL, " +
             "buyer_user_id VARCHAR(100), " +
+            "buyer_user_name VARCHAR(100), " +
             "content TEXT, " +
             "state TINYINT DEFAULT 0, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
@@ -279,6 +280,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         // xianyu_goods_auto_delivery_record 表需要的字段
         List<ColumnDef> deliveryRecordColumns = new ArrayList<>();
         deliveryRecordColumns.add(new ColumnDef("content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN content TEXT"));
+        deliveryRecordColumns.add(new ColumnDef("buyer_user_name", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN buyer_user_name VARCHAR(100)"));
         tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
         
         int addedCount = 0;

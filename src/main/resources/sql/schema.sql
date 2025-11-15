@@ -184,6 +184,7 @@ CREATE TABLE IF NOT EXISTS xianyu_goods_auto_delivery_record (
     xianyu_goods_id BIGINT,                           -- 本地闲鱼商品ID
     xy_goods_id VARCHAR(100) NOT NULL,                -- 闲鱼的商品ID
     buyer_user_id VARCHAR(100),                       -- 买家用户ID
+    buyer_user_name VARCHAR(100),                     -- 买家用户名称
     content TEXT,                                     -- 发货消息内容
     state TINYINT DEFAULT 0,                          -- 状态是否成功1-成功，0-失败
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,   -- 创建时间

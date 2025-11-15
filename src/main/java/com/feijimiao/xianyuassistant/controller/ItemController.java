@@ -18,6 +18,9 @@ public class ItemController {
 
     @Autowired
     private ItemService itemService;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.AutoDeliveryService autoDeliveryService;
 
     /**
      * 刷新商品数据
@@ -123,6 +126,25 @@ public class ItemController {
         } catch (Exception e) {
             log.error("删除商品失败", e);
             return ResultObject.failed("删除商品失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取自动发货记录
+     *
+     * @param reqDTO 请求参数
+     * @return 自动发货记录列表
+     */
+    @PostMapping("/autoDeliveryRecords")
+    public ResultObject<AutoDeliveryRecordRespDTO> getAutoDeliveryRecords(@RequestBody AutoDeliveryRecordReqDTO reqDTO) {
+        try {
+            log.info("获取自动发货记录: xianyuAccountId={}, xyGoodsId={}, pageNum={}, pageSize={}", 
+                    reqDTO.getXianyuAccountId(), reqDTO.getXyGoodsId(), reqDTO.getPageNum(), reqDTO.getPageSize());
+            AutoDeliveryRecordRespDTO respDTO = autoDeliveryService.getAutoDeliveryRecords(reqDTO);
+            return ResultObject.success(respDTO);
+        } catch (Exception e) {
+            log.error("获取自动发货记录失败", e);
+            return ResultObject.failed("获取自动发货记录失败: " + e.getMessage());
         }
     }
 }

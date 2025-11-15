@@ -10,6 +10,7 @@ const {
   loading,
   accounts,
   dialogs,
+  currentAccount,
   deleteAccountId,
   loadAccounts,
   showAddDialog,
@@ -61,7 +62,11 @@ loadAccounts();
     </el-card>
 
     <!-- 对话框组件 -->
-    <AddAccountDialog v-model="dialogs.add" />
+    <AddAccountDialog 
+      v-model="dialogs.add" 
+      :account="currentAccount"
+      @success="loadAccounts" 
+    />
     <ManualAddDialog v-model="dialogs.manualAdd" @success="loadAccounts" />
     <QRLoginDialog v-model="dialogs.qrLogin" @success="loadAccounts" />
     <DeleteConfirmDialog 

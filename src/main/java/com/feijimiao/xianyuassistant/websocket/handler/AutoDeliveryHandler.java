@@ -79,15 +79,19 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
             // 提取买家用户ID（从senderUserId字段）
             String buyerUserId = getString(extension, "senderUserId");
             
+            // 提取买家用户名（从reminderTitle字段）
+            String buyerUserName = getString(extension, "reminderTitle");
+            
             if (xyGoodsId != null && sId != null) {
                 params.setXyGoodsId(xyGoodsId);
                 params.setSId(sId);
                 params.setReminderContent(reminderContent);
                 params.setReminderUrl(reminderUrl);
                 params.setBuyerUserId(buyerUserId);  // 设置买家用户ID
+                params.setBuyerUserName(buyerUserName);  // 设置买家用户名
                 
-                log.info("【账号{}】检测到待付款消息: xyGoodsId={}, sId={}, buyerUserId={}, content={}", 
-                        accountId, xyGoodsId, sId, buyerUserId, reminderContent);
+                log.info("【账号{}】检测到待付款消息: xyGoodsId={}, sId={}, buyerUserId={}, buyerUserName={}, content={}", 
+                        accountId, xyGoodsId, sId, buyerUserId, buyerUserName, reminderContent);
                 
                 break; // 找到一个就够了
             }
@@ -108,12 +112,13 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
         try {
             Long accountIdLong = Long.parseLong(accountId);
             
-            // 触发自动发货（传递买家用户ID）
+            // 触发自动发货（传递买家用户ID和用户名）
             autoDeliveryService.handleAutoDelivery(
                     accountIdLong, 
                     deliveryParams.getXyGoodsId(), 
                     deliveryParams.getSId(),
-                    deliveryParams.getBuyerUserId()  // 传递买家用户ID
+                    deliveryParams.getBuyerUserId(),  // 传递买家用户ID
+                    deliveryParams.getBuyerUserName()  // 传递买家用户名
             );
             
             return "AUTO_DELIVERY_TRIGGERED";
@@ -157,6 +162,7 @@ public class AutoDeliveryHandler extends AbstractLwpHandler {
         private String sId;
         private String reminderContent;
         private String reminderUrl;
-        private String buyerUserId;  // 添加买家用户ID字段
+        private String buyerUserId;  // 买家用户ID
+        private String buyerUserName;  // 买家用户名
     }
 }

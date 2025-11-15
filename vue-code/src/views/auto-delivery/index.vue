@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { getAccountList } from '@/api/account';
 import { getGoodsList, getGoodsDetail, updateAutoDeliveryStatus } from '@/api/goods';
 import {
@@ -13,6 +13,7 @@ import { showSuccess, showError, showInfo } from '@/utils';
 import type { Account } from '@/types';
 import type { GoodsItemWithConfig } from '@/api/goods';
 import GoodsDetailDialog from '../goods/components/GoodsDetailDialog.vue';
+import { getAutoDeliveryRecords, type AutoDeliveryRecordReq, type AutoDeliveryRecordResp } from '@/api/auto-delivery-record';
 
 const loading = ref(false);
 const saving = ref(false);
@@ -31,6 +32,13 @@ const configForm = ref({
   type: 1,
   autoDeliveryContent: ''
 });
+
+// 自动发货记录
+const recordsLoading = ref(false);
+const deliveryRecords = ref<any[]>([]);
+const recordsTotal = ref(0);
+const recordsPageNum = ref(1);
+const recordsPageSize = ref(10);
 
 // 格式化时间
 const formatTime = (time: string) => {
@@ -101,7 +109,9 @@ const handleAccountChange = () => {
 // 选择商品
 const selectGoods = async (goods: GoodsItemWithConfig) => {
   selectedGoods.value = goods;
+  recordsPageNum.value = 1; // 重置页码
   await loadConfig();
+  await loadDeliveryRecords();
 };
 
 // 加载配置
@@ -243,6 +253,62 @@ const toggleAutoDelivery = async (value: boolean) => {
   }
 };
 
+// 加载自动发货记录
+const loadDeliveryRecords = async () => {
+  if (!selectedAccountId.value || !selectedGoods.value) {
+    deliveryRecords.value = [];
+    recordsTotal.value = 0;
+    return;
+  }
+
+  recordsLoading.value = true;
+  try {
+    const req: AutoDeliveryRecordReq = {
+      xianyuAccountId: selectedAccountId.value,
+      xyGoodsId: selectedGoods.value.item.xyGoodId,
+      pageNum: recordsPageNum.value,
+      pageSize: recordsPageSize.value
+    };
+
+    const response = await getAutoDeliveryRecords(req);
+    if (response.code === 0 || response.code === 200) {
+      deliveryRecords.value = response.data?.records || [];
+      recordsTotal.value = response.data?.total || 0;
+    } else {
+      throw new Error(response.msg || '获取记录失败');
+    }
+  } catch (error: any) {
+    console.error('加载自动发货记录失败:', error);
+    deliveryRecords.value = [];
+    recordsTotal.value = 0;
+  } finally {
+    recordsLoading.value = false;
+  }
+};
+
+// 记录分页变化
+const handleRecordsPageChange = (page: number) => {
+  recordsPageNum.value = page;
+  loadDeliveryRecords();
+};
+
+// 记录每页数量变化
+const handleRecordsSizeChange = (size: number) => {
+  recordsPageSize.value = size;
+  recordsPageNum.value = 1;
+  loadDeliveryRecords();
+};
+
+// 获取状态标签类型
+const getRecordStatusType = (state: number) => {
+  return state === 1 ? 'success' : 'danger';
+};
+
+// 获取状态文本
+const getRecordStatusText = (state: number) => {
+  return state === 1 ? '成功' : '失败';
+};
+
 onMounted(() => {
   loadAccounts();
 });
@@ -333,6 +399,10 @@ onMounted(() => {
           </template>
 
           <div class="config-form" v-if="selectedGoods">
+            <div class="goods-title-section">
+              {{ selectedGoods.item.title }}
+            </div>
+
             <el-form :model="configForm" label-width="100px">
               <el-form-item label="自动发货">
                 <el-switch
@@ -375,6 +445,67 @@ onMounted(() => {
                 </div>
               </el-form-item>
             </el-form>
+
+            <!-- 自动发货记录表格 -->
+            <div class="delivery-records-section">
+              <div class="records-header">
+                <span class="records-title">自动发货记录</span>
+                <span class="records-count">共 {{ recordsTotal }} 条记录</span>
+              </div>
+              
+              <div class="records-table" v-loading="recordsLoading">
+                <el-table
+                  :data="deliveryRecords"
+                  stripe
+                  style="width: 100%"
+                  max-height="400"
+                >
+                  <el-table-column type="index" label="ID" width="60" align="center" />
+                  <el-table-column prop="buyerUserId" label="买家ID" width="120">
+                    <template #default="{ row }">
+                      {{ row.buyerUserId || '-' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="buyerUserName" label="买家名称" width="120">
+                    <template #default="{ row }">
+                      {{ row.buyerUserName || '-' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="content" label="发货内容" min-width="200">
+                    <template #default="{ row }">
+                      <div class="content-text">{{ row.content || '-' }}</div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="state" label="状态" width="80" align="center">
+                    <template #default="{ row }">
+                      <el-tag :type="getRecordStatusType(row.state)" size="small">
+                        {{ getRecordStatusText(row.state) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="createTime" label="发货时间" width="180">
+                    <template #default="{ row }">
+                      {{ formatTime(row.createTime) }}
+                    </template>
+                  </el-table-column>
+                  <template #empty>
+                    <el-empty description="暂无发货记录" :image-size="80" />
+                  </template>
+                </el-table>
+
+                <div class="pagination-container" v-if="recordsTotal > 0">
+                  <el-pagination
+                    v-model:current-page="recordsPageNum"
+                    v-model:page-size="recordsPageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    :total="recordsTotal"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    @size-change="handleRecordsSizeChange"
+                    @current-change="handleRecordsPageChange"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-else class="empty-config">
@@ -536,6 +667,14 @@ onMounted(() => {
   padding: 15px 0;
 }
 
+.goods-title-section {
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
 .config-form .el-form-item:first-child {
   margin-bottom: 20px;
 }
@@ -560,5 +699,63 @@ onMounted(() => {
 .last-update-time {
   font-size: 12px;
   color: #909399;
+}
+
+.delivery-records-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.records-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.records-count {
+  font-size: 13px;
+  color: #909399;
+}
+
+.records-table {
+  min-height: 200px;
+}
+
+.buyer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.buyer-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.buyer-id {
+  font-size: 12px;
+  color: #909399;
+}
+
+.content-text {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }
 </style>

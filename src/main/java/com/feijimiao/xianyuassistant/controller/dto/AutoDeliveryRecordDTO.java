@@ -1,12 +1,12 @@
-package com.feijimiao.xianyuassistant.entity;
+package com.feijimiao.xianyuassistant.controller.dto;
 
 import lombok.Data;
 
 /**
- * 商品自动发货记录实体类
+ * 自动发货记录DTO
  */
 @Data
-public class XianyuGoodsAutoDeliveryRecord {
+public class AutoDeliveryRecordDTO {
     
     /**
      * 主键ID
@@ -27,6 +27,11 @@ public class XianyuGoodsAutoDeliveryRecord {
      * 闲鱼的商品ID
      */
     private String xyGoodsId;
+    
+    /**
+     * 商品标题
+     */
+    private String goodsTitle;
     
     /**
      * 买家用户ID
@@ -52,9 +57,4 @@ public class XianyuGoodsAutoDeliveryRecord {
      * 创建时间
      */
     private String createTime;
-    
-    /**
-     * 商品标题（关联查询字段）
-     */
-    private String goodsTitle;
 }
