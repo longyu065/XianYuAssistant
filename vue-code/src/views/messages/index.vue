@@ -170,22 +170,20 @@ const handlePageChange = (page: number) => {
 
 // 获取消息类型文本
 const getContentTypeText = (contentType: number) => {
-  const typeMap: Record<number, string> = {
-    1: '用户消息',
-    2: '图片',
-    32: '已付款待发货'
-  };
-  return typeMap[contentType] || `其他(${contentType})`;
+  // contentType=1 是用户消息，其他都是系统消息
+  if (contentType === 1) {
+    return '用户消息';
+  }
+  return `系统消息(${contentType})`;
 };
 
 // 获取消息类型标签类型
 const getContentTypeTag = (contentType: number) => {
-  const tagMap: Record<number, string> = {
-    1: 'success',
-    2: 'success',
-    32: 'warning'
-  };
-  return tagMap[contentType] || 'info';
+  // contentType=1 是用户消息（绿色），其他都是系统消息（橙色）
+  if (contentType === 1) {
+    return 'success';
+  }
+  return 'warning';
 };
 
 // 判断是否为用户发送的消息

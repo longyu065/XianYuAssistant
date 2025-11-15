@@ -34,9 +34,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
     // 消息处理器
     private WebSocketMessageHandler messageHandler;
     
-    // 聊天消息服务
-    private com.feijimiao.xianyuassistant.service.ChatMessageService chatMessageService;
-    
     // 消息统计
     private long messageCount = 0;
     private long lastMessageTime = 0;
@@ -60,13 +57,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
      */
     public void setMessageHandler(WebSocketMessageHandler handler) {
         this.messageHandler = handler;
-    }
-    
-    /**
-     * 设置聊天消息服务
-     */
-    public void setChatMessageService(com.feijimiao.xianyuassistant.service.ChatMessageService service) {
-        this.chatMessageService = service;
     }
     
     /**
@@ -155,18 +145,14 @@ public class XianyuWebSocketClient extends WebSocketClient {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> messageData = objectMapper.readValue(message, Map.class);
                 
-                // 识别消息类型
+                // 识别消息类型（仅用于调试）
                 Object lwpType = messageData.get("lwp");
                 Object codeType = messageData.get("code");
-                String msgType = "未知";
-                if (lwpType != null) {
-                    msgType = lwpType.toString();
-                } else if (codeType != null) {
-                    msgType = "响应(code=" + codeType + ")";
-                }
                 
-                // 输出消息类型和完整内容
-                log.info("【账号{}】消息#{} [{}]: {}", accountId, messageCount, msgType, message);
+                // 只记录重要的消息类型
+                if (lwpType != null && !"/!".equals(lwpType.toString())) {
+                    log.debug("【账号{}】收到消息: lwp={}", accountId, lwpType);
+                }
                 
                 // 检查消息类型和解密（参考Python的handle_message）
                 Object lwp = messageData.get("lwp");
@@ -198,21 +184,8 @@ public class XianyuWebSocketClient extends WebSocketClient {
                                             String decryptedData = com.feijimiao.xianyuassistant.utils.MessageDecryptUtils.decrypt(encryptedData);
                                             
                                             if (decryptedData != null) {
-                                                // 判断消息方向
-                                                String direction = determineMessageDirection(decryptedData, accountId);
-                                                log.info("【账号{}】{} 解密成功 [{}] 第{}条: {}", accountId, direction, lwp, i + 1, decryptedData);
                                                 // 将解密后的数据放回
                                                 syncData.put("decryptedData", decryptedData);
-                                                
-                                                // 保存到数据库（静默处理，失败不影响消息流程）
-                                                if (chatMessageService != null) {
-                                                    try {
-                                                        Long accountIdLong = Long.parseLong(accountId);
-                                                        chatMessageService.saveChatMessage(accountIdLong, decryptedData);
-                                                    } catch (Exception e) {
-                                                        log.error("【账号{}】保存聊天消息异常: {}", accountId, e.getMessage(), e);
-                                                    }
-                                                }
                                             }
                                         }
                                     }
@@ -231,16 +204,9 @@ public class XianyuWebSocketClient extends WebSocketClient {
                         String bodyStr = (String) body;
                         String decryptedBody = com.feijimiao.xianyuassistant.utils.MessageDecryptUtils.tryDecrypt(bodyStr);
                         if (decryptedBody != null && !decryptedBody.equals(bodyStr)) {
-                            log.info("【账号{}】解密body: {}", accountId, decryptedBody);
                             messageData.put("decryptedBody", decryptedBody);
                         }
                     }
-                }
-
-                // 检查消息类型
-                Object type = messageData.get("type");
-                if (type != null) {
-                    log.info("【账号{}】消息类型: {}", accountId, type);
                 }
 
                 // 发送ACK确认消息（参考Python的handle_message方法）
@@ -271,7 +237,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
                 if (code != null && (code.equals(200) || "200".equals(code.toString()))) {
                     handleHeartbeatResponse();
                     // 心跳响应也要继续处理，不要return
-                    log.debug("【账号{}】收到心跳响应", accountId);
                 }
 
                 // 检查是否是注册响应，保存sid
@@ -419,7 +384,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
             // 发送ACK
             String ackJson = objectMapper.writeValueAsString(ack);
             send(ackJson);
-            log.debug("【账号{}】已发送ACK确认: {}", accountId, ackJson);
             
         } catch (Exception e) {
             log.error("【账号{}】发送ACK失败: {}", accountId, e.getMessage(), e);
@@ -432,7 +396,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
      * 参考Python的handle_heartbeat_response方法
      */
     private void handleHeartbeatResponse() {
-        log.debug("【账号{}】收到心跳响应", accountId);
         if (messageHandler != null) {
             messageHandler.handleHeartbeat(accountId);
         }
@@ -476,7 +439,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
                 String mid = randomPart + String.valueOf(timestamp) + " 0";
                 String heartbeat = String.format("{\"lwp\":\"/!\",\"headers\":{\"mid\":\"%s\"}}", mid);
                 send(heartbeat);
-                log.debug("【账号{}】发送心跳消息: {}", accountId, heartbeat);
             } catch (Exception e) {
                 log.error("【账号{}】发送心跳失败", accountId, e);
             }
@@ -505,10 +467,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
         }
         
         try {
-            log.info("【账号{}】=== 开始发送消息 ===", accountId);
-            log.info("【账号{}】输入参数 - cid: {}, toId: {}, text: {}", accountId, cid, toId, text);
-            log.info("【账号{}】当前用户ID - myUserId: {}, accountId: {}", accountId, myUserId, accountId);
-            
             // 构造消息内容
             Map<String, Object> textContent = new HashMap<>();
             textContent.put("contentType", 1);
@@ -519,9 +477,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
             // Base64编码消息内容
             String textJson = objectMapper.writeValueAsString(textContent);
             String textBase64 = java.util.Base64.getEncoder().encodeToString(textJson.getBytes("UTF-8"));
-            
-            log.info("【账号{}】消息内容JSON: {}", accountId, textJson);
-            log.info("【账号{}】Base64编码: {}", accountId, textBase64);
             
             // 构造消息体
             Map<String, Object> messageBody = new HashMap<>();
@@ -563,9 +518,6 @@ public class XianyuWebSocketClient extends WebSocketClient {
             actualReceivers.add(senderUserId + "@goofish");
             receivers.put("actualReceivers", actualReceivers);
             
-            log.info("【账号{}】实际发送者ID: {}", accountId, senderUserId);
-            log.info("【账号{}】actualReceivers: {}", accountId, actualReceivers);
-            
             // 构造完整消息
             Map<String, Object> message = new HashMap<>();
             message.put("lwp", "/r/MessageSend/sendByReceiverScope");
@@ -581,11 +533,8 @@ public class XianyuWebSocketClient extends WebSocketClient {
             
             // 发送消息
             String messageJson = objectMapper.writeValueAsString(message);
-            log.info("【账号{}】完整消息JSON: {}", accountId, messageJson);
-            
             send(messageJson);
-            log.info("【账号{}】✅ 消息已发送到WebSocket: cid={}, toId={}, text={}", accountId, cid, toId, text);
-            log.info("【账号{}】=== 发送消息完成 ===", accountId);
+            log.info("【账号{}】发送消息: cid={}, toId={}, text={}", accountId, cid, toId, text);
             
         } catch (Exception e) {
             log.error("【账号{}】发送消息失败: cid={}, toId={}", accountId, cid, toId, e);

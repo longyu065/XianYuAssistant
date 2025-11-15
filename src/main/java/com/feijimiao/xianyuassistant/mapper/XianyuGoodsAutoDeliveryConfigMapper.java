@@ -22,7 +22,10 @@ public interface XianyuGoodsAutoDeliveryConfigMapper extends BaseMapper<XianyuGo
      * @param xyGoodsId 闲鱼商品ID
      * @return 自动发货配置
      */
-    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, create_time, update_time FROM xianyu_goods_auto_delivery_config " +
+    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, " +
+            "strftime('%Y-%m-%d %H:%M:%S', create_time) as create_time, " +
+            "strftime('%Y-%m-%d %H:%M:%S', update_time) as update_time " +
+            "FROM xianyu_goods_auto_delivery_config " +
             "WHERE xianyu_account_id = #{xianyuAccountId} AND xy_goods_id = #{xyGoodsId} " +
             "LIMIT 1")
     XianyuGoodsAutoDeliveryConfig findByAccountIdAndGoodsId(@Param("xianyuAccountId") Long xianyuAccountId, 
@@ -34,7 +37,10 @@ public interface XianyuGoodsAutoDeliveryConfigMapper extends BaseMapper<XianyuGo
      * @param xianyuAccountId 闲鱼账号ID
      * @return 自动发货配置列表
      */
-    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, create_time, update_time FROM xianyu_goods_auto_delivery_config " +
+    @Select("SELECT id, xianyu_account_id, xianyu_goods_id, xy_goods_id, type, auto_delivery_content, " +
+            "strftime('%Y-%m-%d %H:%M:%S', create_time) as create_time, " +
+            "strftime('%Y-%m-%d %H:%M:%S', update_time) as update_time " +
+            "FROM xianyu_goods_auto_delivery_config " +
             "WHERE xianyu_account_id = #{xianyuAccountId} " +
             "ORDER BY create_time DESC")
     List<XianyuGoodsAutoDeliveryConfig> findByAccountId(@Param("xianyuAccountId") Long xianyuAccountId);

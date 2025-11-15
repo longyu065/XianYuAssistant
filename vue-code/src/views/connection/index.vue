@@ -251,8 +251,12 @@ const handleManualUpdateCookieSuccess = async () => {
   }
 };
 
-onMounted(() => {
-  loadAccounts();
+onMounted(async () => {
+  await loadAccounts();
+  // 默认选择第一个账号
+  if (accounts.value.length > 0) {
+    selectAccount(accounts.value[0].id);
+  }
 });
 
 onUnmounted(() => {

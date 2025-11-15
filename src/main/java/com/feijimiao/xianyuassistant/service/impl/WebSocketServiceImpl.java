@@ -36,9 +36,6 @@ public class WebSocketServiceImpl implements WebSocketService {
     
     @Autowired
     private WebSocketInitializer initializer;
-    
-    @Autowired
-    private com.feijimiao.xianyuassistant.service.ChatMessageService chatMessageService;
 
     // 存储WebSocket客户端
     private final Map<Long, XianyuWebSocketClient> webSocketClients = new ConcurrentHashMap<>();
@@ -199,9 +196,6 @@ public class WebSocketServiceImpl implements WebSocketService {
             // 设置消息处理器
             client.setMessageHandler(messageHandler);
             
-            // 设置聊天消息服务
-            client.setChatMessageService(chatMessageService);
-            
             // 设置注册成功回调（保存Token）
             final String finalAccessToken = accessToken;
             client.setOnRegistrationSuccess(() -> {
@@ -322,8 +316,6 @@ public class WebSocketServiceImpl implements WebSocketService {
             () -> {
                 try {
                     if (client.isConnected()) {
-                        log.info("【账号{}】WebSocket连接状态: isOpen={}, isClosed={}", 
-                                accountId, client.isOpen(), client.isClosed());
                         client.sendHeartbeat();
                     } else {
                         log.warn("WebSocket未连接，停止心跳: accountId={}", accountId);

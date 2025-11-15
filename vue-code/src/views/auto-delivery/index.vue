@@ -319,6 +319,7 @@ onMounted(() => {
     <div class="page-header">
       <h1 class="page-title">自动发货配置</h1>
       <div class="header-actions">
+        <span class="account-label">选择闲鱼账号</span>
         <el-select
           v-model="selectedAccountId"
           placeholder="选择账号"
@@ -384,15 +385,7 @@ onMounted(() => {
           <template #header>
             <div class="card-header">
               <span class="card-title">自动发货配置</span>
-              <el-button
-                v-if="selectedGoods"
-                type="primary"
-                size="small"
-                @click="viewGoodsDetail"
-              >
-                查看商品详情
-              </el-button>
-              <span class="card-subtitle" v-else>
+              <span class="card-subtitle" v-if="!selectedGoods">
                 请选择商品
               </span>
             </div>
@@ -400,7 +393,14 @@ onMounted(() => {
 
           <div class="config-form" v-if="selectedGoods">
             <div class="goods-title-section">
-              {{ selectedGoods.item.title }}
+              <div class="goods-title-text">{{ selectedGoods.item.title }}</div>
+              <el-button
+                type="primary"
+                size="small"
+                @click="viewGoodsDetail"
+              >
+                查看商品详情
+              </el-button>
             </div>
 
             <el-form :model="configForm" label-width="100px">
@@ -552,6 +552,12 @@ onMounted(() => {
   align-items: center;
 }
 
+.account-label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+}
+
 .content-container {
   flex: 1;
   display: flex;
@@ -664,15 +670,27 @@ onMounted(() => {
 }
 
 .config-form {
-  padding: 15px 0;
+  padding: 0;
 }
 
 .goods-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  padding-top: 5px;
+}
+
+.goods-title-text {
+  flex: 1;
   font-size: 15px;
   font-weight: 500;
   color: #303133;
   line-height: 1.5;
-  margin-bottom: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .config-form .el-form-item:first-child {

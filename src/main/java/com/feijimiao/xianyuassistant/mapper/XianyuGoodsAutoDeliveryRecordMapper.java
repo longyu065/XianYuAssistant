@@ -74,4 +74,10 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
             "</if>" +
             "</script>")
     long countByAccountId(@Param("accountId") Long accountId, @Param("xyGoodsId") String xyGoodsId);
+    
+    /**
+     * 更新发货记录状态
+     */
+    @Update("UPDATE xianyu_goods_auto_delivery_record SET state = #{state} WHERE id = #{id}")
+    int updateState(@Param("id") Long id, @Param("state") Integer state);
 }
