@@ -54,6 +54,16 @@ public class XianyuGoodsAutoDeliveryRecord {
     private Integer state;
     
     /**
+     * 订单ID
+     */
+    private String orderId;
+    
+    /**
+     * 订单状态：1-已发货，0-未发货，-1-自动确认发货失败
+     */
+    private Integer orderState;
+    
+    /**
      * 创建时间
      */
     private String createTime;

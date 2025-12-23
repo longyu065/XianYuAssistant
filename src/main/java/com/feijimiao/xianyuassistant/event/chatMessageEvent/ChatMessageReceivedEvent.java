@@ -1,6 +1,5 @@
 package com.feijimiao.xianyuassistant.event.chatMessageEvent;
 
-import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
@@ -25,20 +24,20 @@ import org.springframework.context.ApplicationEvent;
 public class ChatMessageReceivedEvent extends ApplicationEvent {
     
     /**
-     * 解析后的聊天消息对象
+     * 解析后的聊天消息数据对象
      * 
-     * <p>注意：此时消息尚未入库，id字段为null</p>
+     * <p>注意：使用自定义对象而不是数据库实体，避免耦合</p>
      */
-    private final XianyuChatMessage chatMessage;
+    private final ChatMessageData messageData;
     
     /**
      * 构造函数
      * 
      * @param source 事件源（通常是发布事件的Service）
-     * @param chatMessage 解析后的聊天消息对象
+     * @param messageData 解析后的聊天消息数据对象
      */
-    public ChatMessageReceivedEvent(Object source, XianyuChatMessage chatMessage) {
+    public ChatMessageReceivedEvent(Object source, ChatMessageData messageData) {
         super(source);
-        this.chatMessage = chatMessage;
+        this.messageData = messageData;
     }
 }

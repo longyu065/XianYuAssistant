@@ -283,6 +283,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         deliveryRecordColumns.add(new ColumnDef("content", "TEXT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN content TEXT"));
         deliveryRecordColumns.add(new ColumnDef("buyer_user_name", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN buyer_user_name VARCHAR(100)"));
         deliveryRecordColumns.add(new ColumnDef("pnm_id", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN pnm_id VARCHAR(100)"));
+        deliveryRecordColumns.add(new ColumnDef("order_id", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN order_id VARCHAR(100)"));
+        deliveryRecordColumns.add(new ColumnDef("order_state", "TINYINT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN order_state TINYINT DEFAULT 0"));
         tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
         
         int addedCount = 0;
@@ -401,6 +403,10 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_create_time ON xianyu_goods_auto_delivery_record(create_time)");
         requiredIndexes.put("idx_auto_delivery_record_pnm_id",
             "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_pnm_id ON xianyu_goods_auto_delivery_record(pnm_id)");
+        requiredIndexes.put("idx_auto_delivery_record_order_id",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_order_id ON xianyu_goods_auto_delivery_record(order_id)");
+        requiredIndexes.put("idx_auto_delivery_record_order_state",
+            "CREATE INDEX IF NOT EXISTS idx_auto_delivery_record_order_state ON xianyu_goods_auto_delivery_record(order_state)");
         requiredIndexes.put("idx_auto_delivery_record_unique",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_auto_delivery_record_unique ON xianyu_goods_auto_delivery_record(xianyu_account_id, pnm_id)");
         

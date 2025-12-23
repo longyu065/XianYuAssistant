@@ -310,6 +310,70 @@ const getRecordStatusText = (state: number) => {
   return state === 1 ? '成功' : '失败';
 };
 
+// 从消息内容中提取订单ID
+const extractOrderId = (content: string): string | null => {
+  try {
+    // 尝试解析 JSON
+    const data = JSON.parse(content);
+    
+    // 从 reminderUrl 中提取订单ID
+    // 格式: fleamarket://order_detail?id=3052762719755595568&role=seller
+    const reminderUrl = data?.['1']?.['6']?.['10']?.reminderUrl || '';
+    const match = reminderUrl.match(/[?&]id=(\d+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    
+    // 如果 reminderUrl 中没有，尝试从 targetUrl 中提取
+    const targetUrl = data?.['1']?.['6']?.['5']?.['1']?.['1']?.['1']?.main?.targetUrl || '';
+    const match2 = targetUrl.match(/[?&]id=(\d+)/);
+    if (match2 && match2[1]) {
+      return match2[1];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('解析订单ID失败:', error);
+    return null;
+  }
+};
+
+// 确认收货
+const handleConfirmShipment = async (record: any) => {
+  if (!selectedAccountId.value) {
+    showInfo('请先选择账号');
+    return;
+  }
+
+  // 从消息内容中提取订单ID
+  const orderId = extractOrderId(record.content);
+  if (!orderId) {
+    showError('无法从消息中提取订单ID');
+    return;
+  }
+
+  try {
+    await showConfirm(`确定要确认收货吗？订单ID: ${orderId}`, '确认收货');
+    
+    const response = await confirmShipment({
+      xianyuAccountId: selectedAccountId.value,
+      orderId: orderId
+    });
+
+    if (response.code === 0 || response.code === 200) {
+      showSuccess('确认收货成功');
+      // 刷新记录列表
+      loadDeliveryRecords();
+    }
+  } catch (error: any) {
+    if (error === 'cancel') {
+      // 用户取消操作
+      return;
+    }
+    console.error('确认收货失败:', error);
+  }
+};
+
 onMounted(() => {
   loadAccounts();
 });

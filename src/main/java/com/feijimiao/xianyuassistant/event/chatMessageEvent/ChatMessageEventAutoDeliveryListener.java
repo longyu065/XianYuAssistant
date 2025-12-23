@@ -70,11 +70,11 @@ public class ChatMessageEventAutoDeliveryListener {
     @Async
     @EventListener
     public void handleChatMessageReceived(ChatMessageReceivedEvent event) {
-        XianyuChatMessage message = event.getChatMessage();
+        ChatMessageData message = event.getMessageData();
         
-        log.info("【账号{}】[AutoDeliveryListener]收到ChatMessageReceivedEvent事件: pnmId={}, contentType={}, msgContent={}, xyGoodsId={}, sId={}", 
+        log.info("【账号{}】[AutoDeliveryListener]收到ChatMessageReceivedEvent事件: pnmId={}, contentType={}, msgContent={}, xyGoodsId={}, sId={}, orderId={}", 
                 message.getXianyuAccountId(), message.getPnmId(), message.getContentType(), 
-                message.getMsgContent(), message.getXyGoodsId(), message.getSId());
+                message.getMsgContent(), message.getXyGoodsId(), message.getSId(), message.getOrderId());
         
         try {
             // 判断是否需要触发自动发货

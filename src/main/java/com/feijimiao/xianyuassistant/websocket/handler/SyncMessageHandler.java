@@ -2,8 +2,10 @@ package com.feijimiao.xianyuassistant.websocket.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feijimiao.xianyuassistant.entity.XianyuChatMessage;
+import com.feijimiao.xianyuassistant.event.chatMessageEvent.ChatMessageData;
 import com.feijimiao.xianyuassistant.event.chatMessageEvent.ChatMessageReceivedEvent;
 import com.feijimiao.xianyuassistant.utils.MessageDecryptUtils;
+import org.springframework.beans.BeanUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -235,6 +237,14 @@ public class SyncMessageHandler extends AbstractLwpHandler {
      */
     private void publishChatMessageReceivedEvent(XianyuChatMessage message) {
         try {
+            // 转换为 ChatMessageData
+            ChatMessageData messageData = new ChatMessageData();
+            BeanUtils.copyProperties(message, messageData);
+            
+            // 从完整消息中提取订单ID
+            String orderId = extractOrderIdFromMessage(message.getCompleteMsg());
+            messageData.setOrderId(orderId);
+            
             log.info("【账号{}】准备发布ChatMessageReceivedEvent事件，完整消息对象: \n" +
                     "  pnmId={}\n" +
                     "  sId={}\n" +
@@ -247,7 +257,8 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                     "  senderUserName={}\n" +
                     "  senderAppV={}\n" +
                     "  senderOsType={}\n" +
-                    "  messageTime={}", 
+                    "  messageTime={}\n" +
+                    "  orderId={}", 
                     message.getXianyuAccountId(),
                     message.getPnmId(),
                     message.getSId(),
@@ -260,16 +271,58 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                     message.getSenderUserName(),
                     message.getSenderAppV(),
                     message.getSenderOsType(),
-                    message.getMessageTime());
+                    message.getMessageTime(),
+                    orderId);
             
-            ChatMessageReceivedEvent event = new ChatMessageReceivedEvent(this, message);
+            ChatMessageReceivedEvent event = new ChatMessageReceivedEvent(this, messageData);
             eventPublisher.publishEvent(event);
             
-            log.info("【账号{}】ChatMessageReceivedEvent事件已发布: pnmId={}", 
-                    message.getXianyuAccountId(), message.getPnmId());
+            log.info("【账号{}】ChatMessageReceivedEvent事件已发布: pnmId={}, orderId={}", 
+                    message.getXianyuAccountId(), message.getPnmId(), orderId);
         } catch (Exception e) {
             log.error("【账号{}】发布消息接收事件失败: pnmId={}", 
                     message.getXianyuAccountId(), message.getPnmId(), e);
+        }
+    }
+    
+    /**
+     * 从完整消息中提取订单ID
+     */
+    private String extractOrderIdFromMessage(String completeMsg) {
+        try {
+            if (completeMsg == null || completeMsg.isEmpty()) {
+                return null;
+            }
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = objectMapper.readValue(completeMsg, Map.class);
+            
+            // 从 reminderUrl 中提取订单ID
+            // 路径: 1.6.10.reminderUrl
+            Object level1 = data.get("1");
+            if (level1 instanceof Map) {
+                Object level6 = ((Map<?, ?>) level1).get("6");
+                if (level6 instanceof Map) {
+                    Object level10 = ((Map<?, ?>) level6).get("10");
+                    if (level10 instanceof Map) {
+                        String reminderUrl = (String) ((Map<?, ?>) level10).get("reminderUrl");
+                        if (reminderUrl != null && reminderUrl.contains("id=")) {
+                            // 提取 id 参数
+                            String[] parts = reminderUrl.split("[?&]");
+                            for (String part : parts) {
+                                if (part.startsWith("id=")) {
+                                    return part.substring(3);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.warn("提取订单ID失败", e);
+            return null;
         }
     }
     

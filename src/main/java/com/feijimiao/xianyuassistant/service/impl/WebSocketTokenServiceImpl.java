@@ -260,6 +260,21 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
             }
             
             log.error("【账号{}】获取accessToken失败：{}", accountId, response);
+            
+            // 检查是否是Cookie过期导致的失败
+            if (response.contains("FAIL_SYS_SESSION_EXPIRED") || response.contains("令牌过期")) {
+                // 更新Cookie状态为过期
+                updateCookieStatus(accountId, 2);
+                throw new com.feijimiao.xianyuassistant.exception.CookieExpiredException("Cookie已过期，请更新Cookie后重试");
+            }
+            
+            // 检查是否是Cookie失效
+            if (response.contains("FAIL_SYS_ILLEGAL_ACCESS") || response.contains("非法访问")) {
+                // 更新Cookie状态为失效
+                updateCookieStatus(accountId, 3);
+                throw new com.feijimiao.xianyuassistant.exception.CookieExpiredException("Cookie已失效，请重新获取Cookie");
+            }
+            
             return null;
             
         } catch (CaptchaRequiredException e) {
@@ -331,6 +346,23 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
             }
         } catch (Exception e) {
             log.error("【账号{}】更新账号状态失败", accountId, e);
+        }
+    }
+    
+    /**
+     * 更新Cookie状态
+     */
+    private void updateCookieStatus(Long accountId, Integer status) {
+        try {
+            xianyuCookieMapper.update(null,
+                    new LambdaUpdateWrapper<XianyuCookie>()
+                            .eq(XianyuCookie::getXianyuAccountId, accountId)
+                            .set(XianyuCookie::getCookieStatus, status)
+            );
+            String statusText = status == 2 ? "过期" : status == 3 ? "失效" : "未知";
+            log.info("【账号{}】Cookie状态已更新为{}({})", accountId, status, statusText);
+        } catch (Exception e) {
+            log.error("【账号{}】更新Cookie状态失败", accountId, e);
         }
     }
     

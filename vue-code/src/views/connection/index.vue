@@ -107,12 +107,35 @@ const handleStartConnection = async () => {
       showSuccess('连接启动成功');
       addLog('连接启动成功');
       await loadConnectionStatus(selectedAccountId.value);
+    } else if (response.code === 500 && response.data?.needCaptcha) {
+      // 需要滑块验证
+      const captchaUrl = response.data.captchaUrl;
+      addLog('⚠️ 需要完成滑块验证', true);
+      
+      // 显示验证对话框
+      await ElMessageBox.confirm(
+        `检测到账号需要完成滑块验证才能启动连接。\n\n点击"打开验证"将在新窗口中打开验证页面，完成验证后请点击"清除等待状态"按钮重试。`,
+        '需要滑块验证',
+        {
+          confirmButtonText: '打开验证',
+          cancelButtonText: '取消',
+          type: 'warning',
+          distinguishCancelAndClose: true
+        }
+      );
+      
+      // 打开验证链接
+      window.open(captchaUrl, '_blank', 'width=800,height=600');
+      addLog('已在新窗口打开验证页面，请完成验证后点击"清除等待状态"按钮重试');
+      showInfo('请在新窗口完成验证，然后点击"清除等待状态"按钮重试');
     } else {
       throw new Error(response.msg || '启动连接失败');
     }
   } catch (error: any) {
-    console.error('启动连接失败:', error);
-    addLog('启动连接失败: ' + error.message, true);
+    if (error !== 'cancel' && error !== 'close') {
+      console.error('启动连接失败:', error);
+      addLog('启动连接失败: ' + error.message, true);
+    }
   } finally {
     statusLoading.value = false;
   }
@@ -152,6 +175,29 @@ const handleStopConnection = async () => {
   } catch (error: any) {
     console.error('断开连接失败:', error);
     addLog('断开连接失败: ' + error.message, true);
+  } finally {
+    statusLoading.value = false;
+  }
+};
+
+// 清除验证等待状态
+const handleClearCaptchaWait = async () => {
+  if (!selectedAccountId.value) return;
+  
+  statusLoading.value = true;
+  addLog('正在清除验证等待状态...');
+  try {
+    const { clearCaptchaWait } = await import('@/api/websocket');
+    const response = await clearCaptchaWait(selectedAccountId.value);
+    if (response.code === 0 || response.code === 200) {
+      showSuccess('验证等待状态已清除，可以重新启动连接');
+      addLog('✅ 验证等待状态已清除');
+    } else {
+      throw new Error(response.msg || '清除失败');
+    }
+  } catch (error: any) {
+    console.error('清除验证等待状态失败:', error);
+    addLog('清除验证等待状态失败: ' + error.message, true);
   } finally {
     statusLoading.value = false;
   }
@@ -478,6 +524,15 @@ onUnmounted(() => {
                   class="main-action-btn start-connection-btn"
                 >
                   ▶ 启动连接
+                </el-button>
+                <el-button
+                  type="warning"
+                  size="default"
+                  @click="handleClearCaptchaWait"
+                  class="main-action-btn"
+                  :disabled="!selectedAccountId"
+                >
+                  🔓 清除验证等待
                 </el-button>
                 <div class="action-tip">
                   ⚠️ 请勿频繁启用连接和断开连接，否则容易触发滑动窗口人机校验，导致账号暂时不可用

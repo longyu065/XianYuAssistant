@@ -73,7 +73,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             String cookieStr = accountService.getCookieByAccountId(accountId);
             if (cookieStr == null || cookieStr.isEmpty()) {
                 log.error("未找到账号Cookie: accountId={}", accountId);
-                return false;
+                throw new com.feijimiao.xianyuassistant.exception.CookieNotFoundException("未找到账号Cookie，请先配置Cookie");
             }
 
             // 解析Cookie
@@ -83,7 +83,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             String unb = cookies.get("unb");
             if (unb == null || unb.isEmpty()) {
                 log.error("Cookie中缺少unb字段: accountId={}", accountId);
-                return false;
+                throw new com.feijimiao.xianyuassistant.exception.CookieExpiredException("Cookie中缺少unb字段，Cookie可能已过期或无效");
             }
             String deviceId = "web_" + unb;
             
@@ -93,7 +93,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             if (accessToken == null || accessToken.isEmpty()) {
                 log.error("获取accessToken失败: accountId={}", accountId);
                 log.error("无法继续WebSocket连接，请检查Cookie是否有效");
-                return false;
+                throw new com.feijimiao.xianyuassistant.exception.TokenInvalidException("无法获取WebSocket Token，请检查Cookie是否有效");
             }
             log.info("accessToken获取成功: accountId={}, token长度={}", accountId, accessToken.length());
             
@@ -135,7 +135,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             String cookieStr = accountService.getCookieByAccountId(accountId);
             if (cookieStr == null || cookieStr.isEmpty()) {
                 log.error("【账号{}】未找到账号Cookie", accountId);
-                return false;
+                throw new com.feijimiao.xianyuassistant.exception.CookieNotFoundException("未找到账号Cookie，请先配置Cookie");
             }
             log.info("【账号{}】Cookie长度={}", accountId, cookieStr.length());
 
@@ -147,7 +147,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             String unb = cookies.get("unb");
             if (unb == null || unb.isEmpty()) {
                 log.error("【账号{}】Cookie中缺少unb字段", accountId);
-                return false;
+                throw new com.feijimiao.xianyuassistant.exception.CookieExpiredException("Cookie中缺少unb字段，Cookie可能已过期或无效");
             }
             String deviceId = "web_" + unb;
             log.info("【账号{}】设备ID={}", accountId, deviceId);

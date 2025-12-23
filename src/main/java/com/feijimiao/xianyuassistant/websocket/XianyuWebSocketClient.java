@@ -456,8 +456,8 @@ public class XianyuWebSocketClient extends WebSocketClient {
      * 发送消息
      * 参考Python的send_msg方法
      * 
-     * @param cid 会话ID（不带@goofish后缀）
-     * @param toId 接收方用户ID（不带@goofish后缀）
+     * @param cid 会话ID（可能带或不带@goofish后缀）
+     * @param toId 接收方用户ID（可能带或不带@goofish后缀）
      * @param text 消息文本内容
      */
     public void sendMessage(String cid, String toId, String text) {
@@ -467,6 +467,13 @@ public class XianyuWebSocketClient extends WebSocketClient {
         }
         
         try {
+            // 移除可能存在的@goofish后缀，确保统一处理
+            String cleanCid = cid.replace("@goofish", "");
+            String cleanToId = toId.replace("@goofish", "");
+            
+            log.info("【账号{}】准备发送消息: cleanCid={}, cleanToId={}, text={}", 
+                    accountId, cleanCid, cleanToId, text);
+            
             // 构造消息内容
             Map<String, Object> textContent = new HashMap<>();
             textContent.put("contentType", 1);
@@ -481,7 +488,7 @@ public class XianyuWebSocketClient extends WebSocketClient {
             // 构造消息体
             Map<String, Object> messageBody = new HashMap<>();
             messageBody.put("uuid", generateUuid());
-            messageBody.put("cid", cid + "@goofish");
+            messageBody.put("cid", cleanCid + "@goofish");
             messageBody.put("conversationType", 1);
             
             // 消息内容
@@ -512,11 +519,13 @@ public class XianyuWebSocketClient extends WebSocketClient {
             // 接收者列表（参考Python: actualReceivers包含接收方和发送方）
             Map<String, Object> receivers = new HashMap<>();
             java.util.List<String> actualReceivers = new java.util.ArrayList<>();
-            actualReceivers.add(toId + "@goofish");
+            actualReceivers.add(cleanToId + "@goofish");
             // 使用myUserId而不是accountId
             String senderUserId = myUserId != null ? myUserId : accountId;
             actualReceivers.add(senderUserId + "@goofish");
             receivers.put("actualReceivers", actualReceivers);
+            
+            log.info("【账号{}】消息接收者列表: {}", accountId, actualReceivers);
             
             // 构造完整消息
             Map<String, Object> message = new HashMap<>();
@@ -524,6 +533,9 @@ public class XianyuWebSocketClient extends WebSocketClient {
             
             Map<String, String> headers = new HashMap<>();
             headers.put("mid", generateMid());
+            if (sessionId != null) {
+                headers.put("sid", sessionId);
+            }
             message.put("headers", headers);
             
             java.util.List<Object> body = new java.util.ArrayList<>();
@@ -533,11 +545,12 @@ public class XianyuWebSocketClient extends WebSocketClient {
             
             // 发送消息
             String messageJson = objectMapper.writeValueAsString(message);
+            log.debug("【账号{}】发送消息JSON: {}", accountId, messageJson);
             send(messageJson);
-            log.info("【账号{}】发送消息: cid={}, toId={}, text={}", accountId, cid, toId, text);
+            log.info("【账号{}】✅ 消息已发送到WebSocket", accountId);
             
         } catch (Exception e) {
-            log.error("【账号{}】发送消息失败: cid={}, toId={}", accountId, cid, toId, e);
+            log.error("【账号{}】❌ 发送消息失败: cid={}, toId={}", accountId, cid, toId, e);
         }
     }
     

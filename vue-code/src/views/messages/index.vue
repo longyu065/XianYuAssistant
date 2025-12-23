@@ -164,7 +164,21 @@ const handleAccountChange = () => {
 
 // 选择商品进行筛选
 const selectGoods = (goodsId: string) => {
-  goodsIdFilter.value = goodsId;
+  // 如果点击的是已选中的商品，则取消筛选
+  if (goodsIdFilter.value === goodsId) {
+    clearFilter();
+  } else {
+    goodsIdFilter.value = goodsId;
+    showInfo('已筛选该商品的消息');
+    currentPage.value = 1;
+    loadMessages();
+  }
+};
+
+// 清除筛选
+const clearFilter = () => {
+  goodsIdFilter.value = '';
+  showInfo('已取消筛选，显示全部消息');
   currentPage.value = 1;
   loadMessages();
 };
@@ -176,7 +190,12 @@ const handlePageChange = (page: number) => {
 };
 
 // 获取消息类型文本
-const getContentTypeText = (contentType: number) => {
+const getContentTypeText = (contentType: number, row: ChatMessage) => {
+  // 如果是当前账号发送的消息，显示"你发送的"
+  if (!isUserMessage(row)) {
+    return '你发送的';
+  }
+  
   // contentType=1 是用户消息，其他都是系统消息
   if (contentType === 1) {
     return '用户消息';
@@ -185,7 +204,12 @@ const getContentTypeText = (contentType: number) => {
 };
 
 // 获取消息类型标签类型
-const getContentTypeTag = (contentType: number) => {
+const getContentTypeTag = (contentType: number, row: ChatMessage) => {
+  // 如果是当前账号发送的消息，使用primary类型（蓝色）
+  if (!isUserMessage(row)) {
+    return 'primary';
+  }
+  
   // contentType=1 是用户消息（绿色），其他都是系统消息（橙色）
   if (contentType === 1) {
     return 'success';
@@ -336,6 +360,15 @@ onUnmounted(() => {
         <template #header>
           <div class="panel-header">
             <span class="panel-title">商品列表</span>
+            <el-button 
+              v-if="goodsIdFilter" 
+              type="info" 
+              size="small" 
+              plain
+              @click="clearFilter"
+            >
+              取消筛选
+            </el-button>
           </div>
         </template>
         
@@ -404,8 +437,8 @@ onUnmounted(() => {
             
             <el-table-column label="消息类型" width="120">
               <template #default="{ row }">
-                <el-tag :type="getContentTypeTag(row.contentType)" size="small">
-                  {{ getContentTypeText(row.contentType) }}
+                <el-tag :type="getContentTypeTag(row.contentType, row)" size="small">
+                  {{ getContentTypeText(row.contentType, row) }}
                 </el-tag>
               </template>
             </el-table-column>

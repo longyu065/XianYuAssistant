@@ -54,20 +54,93 @@ public class WebSocketController {
             if (success) {
                 return ResultObject.success(null, "WebSocket连接已启动");
             } else {
-                return ResultObject.failed("WebSocket连接启动失败");
+                // 检查具体失败原因
+                String errorMessage = getDetailedErrorMessage(reqDTO.getXianyuAccountId());
+                return ResultObject.failed(errorMessage);
             }
             
         } catch (com.feijimiao.xianyuassistant.exception.CaptchaRequiredException e) {
-            log.debug("需要滑块验证: accountId={}, url={}", reqDTO.getXianyuAccountId(), e.getCaptchaUrl());
+            log.warn("⚠️ 需要滑块验证: accountId={}, url={}", reqDTO.getXianyuAccountId(), e.getCaptchaUrl());
             CaptchaInfoDTO captchaInfo = new CaptchaInfoDTO();
             captchaInfo.setNeedCaptcha(true);
             captchaInfo.setCaptchaUrl(e.getCaptchaUrl());
-            captchaInfo.setMessage("需要完成滑块验证，请在浏览器中打开验证链接");
+            captchaInfo.setMessage("检测到账号需要完成滑块验证。系统将自动打开验证页面，请完成验证后点击按钮重试。");
+            
+            log.info("📋 滑块验证信息:");
+            log.info("   - 账号ID: {}", reqDTO.getXianyuAccountId());
+            log.info("   - 验证URL: {}", e.getCaptchaUrl());
+            log.info("   - 提示: 请在浏览器中完成验证，然后调用 /api/websocket/clearCaptchaWait 清除等待状态");
+            
             ResultObject<CaptchaInfoDTO> result = new ResultObject<>(500, "需要滑块验证", captchaInfo);
             return result;
+        } catch (com.feijimiao.xianyuassistant.exception.CookieNotFoundException e) {
+            log.error("Cookie未找到: accountId={}", reqDTO.getXianyuAccountId());
+            return ResultObject.failed("WebSocket连接启动失败：" + e.getMessage());
+        } catch (com.feijimiao.xianyuassistant.exception.CookieExpiredException e) {
+            log.error("Cookie已过期: accountId={}", reqDTO.getXianyuAccountId());
+            return ResultObject.failed("WebSocket连接启动失败：" + e.getMessage());
+        } catch (com.feijimiao.xianyuassistant.exception.TokenInvalidException e) {
+            log.error("Token无效: accountId={}", reqDTO.getXianyuAccountId());
+            return ResultObject.failed("WebSocket连接启动失败：" + e.getMessage());
         } catch (Exception e) {
             log.error("启动WebSocket失败", e);
             return ResultObject.failed("启动WebSocket失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取详细的错误信息
+     */
+    private String getDetailedErrorMessage(Long xianyuAccountId) {
+        try {
+            // 查询Cookie信息
+            com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper cookieMapper = 
+                    applicationContext.getBean(com.feijimiao.xianyuassistant.mapper.XianyuCookieMapper.class);
+            
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.feijimiao.xianyuassistant.entity.XianyuCookie> cookieQuery = 
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+            cookieQuery.eq(com.feijimiao.xianyuassistant.entity.XianyuCookie::getXianyuAccountId, xianyuAccountId)
+                    .orderByDesc(com.feijimiao.xianyuassistant.entity.XianyuCookie::getCreatedTime)
+                    .last("LIMIT 1");
+            com.feijimiao.xianyuassistant.entity.XianyuCookie cookie = cookieMapper.selectOne(cookieQuery);
+            
+            if (cookie == null) {
+                return "WebSocket连接启动失败：未找到账号Cookie，请先配置Cookie";
+            }
+            
+            // 检查Cookie状态
+            if (cookie.getCookieStatus() != null && cookie.getCookieStatus() == 2) {
+                return "WebSocket连接启动失败：Cookie已过期，请更新Cookie后重试";
+            }
+            
+            if (cookie.getCookieStatus() != null && cookie.getCookieStatus() == 3) {
+                return "WebSocket连接启动失败：Cookie已失效，请重新获取Cookie";
+            }
+            
+            // 检查Cookie文本是否为空
+            if (cookie.getCookieText() == null || cookie.getCookieText().trim().isEmpty()) {
+                return "WebSocket连接启动失败：Cookie内容为空，请重新配置Cookie";
+            }
+            
+            // 检查WebSocket Token
+            if (cookie.getWebsocketToken() != null && !cookie.getWebsocketToken().isEmpty()) {
+                // 检查Token是否过期
+                if (cookie.getTokenExpireTime() != null) {
+                    long now = System.currentTimeMillis();
+                    if (cookie.getTokenExpireTime() <= now) {
+                        return "WebSocket连接启动失败：WebSocket Token已过期，系统将自动刷新Token，请稍后重试";
+                    }
+                }
+                // Token存在且未过期，但连接失败
+                return "WebSocket连接启动失败：WebSocket Token无效或连接被拒绝，请尝试更新Cookie或稍后重试";
+            }
+            
+            // Token不存在，可能是获取Token失败
+            return "WebSocket连接启动失败：无法获取WebSocket Token，请检查Cookie是否有效或稍后重试";
+            
+        } catch (Exception e) {
+            log.error("获取详细错误信息失败", e);
+            return "WebSocket连接启动失败：系统错误，请查看日志获取详细信息";
         }
     }
 

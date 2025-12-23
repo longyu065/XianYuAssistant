@@ -64,3 +64,12 @@ export function sendMessage(data: SendMessageRequest) {
     data
   });
 }
+
+// 清除验证等待状态
+export function clearCaptchaWait(accountId: number) {
+  return request({
+    url: '/websocket/clearCaptchaWait',
+    method: 'POST',
+    data: { xianyuAccountId: accountId }
+  });
+}

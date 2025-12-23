@@ -38,10 +38,14 @@ public class ChatMessageEventSaveListener {
     @Async
     @EventListener
     public void handleChatMessageReceived(ChatMessageReceivedEvent event) {
-        XianyuChatMessage message = event.getChatMessage();
+        ChatMessageData messageData = event.getMessageData();
         
-        log.info("【账号{}】[SaveListener]收到ChatMessageReceivedEvent事件: pnmId={}, contentType={}, msgContent={}", 
-                message.getXianyuAccountId(), message.getPnmId(), message.getContentType(), message.getMsgContent());
+        // 转换为数据库实体
+        XianyuChatMessage message = new XianyuChatMessage();
+        org.springframework.beans.BeanUtils.copyProperties(messageData, message);
+        
+        log.info("【账号{}】[SaveListener]收到ChatMessageReceivedEvent事件: pnmId={}, contentType={}, msgContent={}, orderId={}", 
+                message.getXianyuAccountId(), message.getPnmId(), message.getContentType(), message.getMsgContent(), messageData.getOrderId());
         
         try {
             // 检查消息是否已存在（去重）
