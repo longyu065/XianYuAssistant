@@ -37,13 +37,13 @@ public class OrderController {
             }
 
             // 确认发货
-            boolean success = orderService.confirmShipment(
+            String result = orderService.confirmShipment(
                     reqDTO.getXianyuAccountId(),
                     reqDTO.getOrderId()
             );
 
-            if (success) {
-                return ResultObject.success("确认发货成功");
+            if (result != null) {
+                return ResultObject.success(result);
             } else {
                 return ResultObject.failed("确认发货失败");
             }

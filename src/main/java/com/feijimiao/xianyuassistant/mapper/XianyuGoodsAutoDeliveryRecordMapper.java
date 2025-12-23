@@ -14,8 +14,8 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
     /**
      * 插入记录
      */
-    @Insert("INSERT INTO xianyu_goods_auto_delivery_record (xianyu_account_id, xianyu_goods_id, xy_goods_id, pnm_id, buyer_user_id, buyer_user_name, content, state) " +
-            "VALUES (#{xianyuAccountId}, #{xianyuGoodsId}, #{xyGoodsId}, #{pnmId}, #{buyerUserId}, #{buyerUserName}, #{content}, #{state})")
+    @Insert("INSERT INTO xianyu_goods_auto_delivery_record (xianyu_account_id, xianyu_goods_id, xy_goods_id, pnm_id, buyer_user_id, buyer_user_name, content, state, order_id) " +
+            "VALUES (#{xianyuAccountId}, #{xianyuGoodsId}, #{xyGoodsId}, #{pnmId}, #{buyerUserId}, #{buyerUserName}, #{content}, #{state}, #{orderId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(XianyuGoodsAutoDeliveryRecord record);
     
@@ -54,6 +54,8 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
         @Result(property = "buyerUserName", column = "buyer_user_name"),
         @Result(property = "content", column = "content"),
         @Result(property = "state", column = "state"),
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "orderState", column = "order_state"),
         @Result(property = "createTime", column = "create_time"),
         @Result(property = "goodsTitle", column = "goods_title")
     })
@@ -86,4 +88,10 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
      */
     @Update("UPDATE xianyu_goods_auto_delivery_record SET state = #{state}, content = #{content} WHERE id = #{id}")
     int updateStateAndContent(@Param("id") Long id, @Param("state") Integer state, @Param("content") String content);
+    
+    /**
+     * 更新确认发货状态
+     */
+    @Update("UPDATE xianyu_goods_auto_delivery_record SET order_state = #{orderState} WHERE xianyu_account_id = #{accountId} AND order_id = #{orderId}")
+    int updateOrderState(@Param("accountId") Long accountId, @Param("orderId") String orderId, @Param("orderState") Integer orderState);
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { ElMessageBox } from 'element-plus';
 import { getAccountList } from '@/api/account';
 import { getGoodsList, getGoodsDetail, updateAutoDeliveryStatus } from '@/api/goods';
 import {
@@ -13,7 +14,7 @@ import { showSuccess, showError, showInfo } from '@/utils';
 import type { Account } from '@/types';
 import type { GoodsItemWithConfig } from '@/api/goods';
 import GoodsDetailDialog from '../goods/components/GoodsDetailDialog.vue';
-import { getAutoDeliveryRecords, type AutoDeliveryRecordReq, type AutoDeliveryRecordResp } from '@/api/auto-delivery-record';
+import { getAutoDeliveryRecords, type AutoDeliveryRecordReq, type AutoDeliveryRecordResp, confirmShipment, type ConfirmShipmentReq } from '@/api/auto-delivery-record';
 
 const loading = ref(false);
 const saving = ref(false);
@@ -30,7 +31,8 @@ const selectedGoodsId = ref<string>('');
 // 表单数据
 const configForm = ref({
   type: 1,
-  autoDeliveryContent: ''
+  autoDeliveryContent: '',
+  autoConfirmShipment: 0
 });
 
 // 自动发货记录
@@ -131,10 +133,12 @@ const loadConfig = async () => {
       if (response.data) {
         configForm.value.type = response.data.type;
         configForm.value.autoDeliveryContent = response.data.autoDeliveryContent || '';
+        configForm.value.autoConfirmShipment = response.data.autoConfirmShipment || 0;
       } else {
         // 重置表单
         configForm.value.type = 1;
         configForm.value.autoDeliveryContent = '';
+        configForm.value.autoConfirmShipment = 0;
       }
     } else {
       throw new Error(response.msg || '获取配置失败');
@@ -164,7 +168,8 @@ const saveConfig = async () => {
       xianyuGoodsId: selectedGoods.value.item.id,
       xyGoodsId: selectedGoods.value.item.xyGoodId,
       type: configForm.value.type,
-      autoDeliveryContent: configForm.value.autoDeliveryContent.trim()
+      autoDeliveryContent: configForm.value.autoDeliveryContent.trim(),
+      autoConfirmShipment: configForm.value.autoConfirmShipment
     };
 
     const response = await saveOrUpdateAutoDeliveryConfig(req);
@@ -310,6 +315,52 @@ const getRecordStatusText = (state: number) => {
   return state === 1 ? '成功' : '失败';
 };
 
+// 确认收货
+const handleConfirmShipment = async (record: any) => {
+  if (!selectedAccountId.value) {
+    showInfo('请先选择账号');
+    return;
+  }
+
+  if (!record.orderId) {
+    showError('该记录没有订单ID，无法确认收货');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要确认收货吗？订单ID: ${record.orderId}`,
+      '确认收货',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+
+    const req: ConfirmShipmentReq = {
+      xianyuAccountId: selectedAccountId.value,
+      orderId: record.orderId
+    };
+
+    const response = await confirmShipment(req);
+    if (response.code === 0 || response.code === 200) {
+      showSuccess('确认收货成功');
+      // 刷新记录列表
+      await loadDeliveryRecords();
+    } else {
+      throw new Error(response.msg || '确认收货失败');
+    }
+  } catch (error: any) {
+    if (error === 'cancel') {
+      // 用户取消操作
+      return;
+    }
+    console.error('确认收货失败:', error);
+    showError(error.message || '确认收货失败');
+  }
+};
+
 // 从消息内容中提取订单ID
 const extractOrderId = (content: string): string | null => {
   try {
@@ -335,42 +386,6 @@ const extractOrderId = (content: string): string | null => {
   } catch (error) {
     console.error('解析订单ID失败:', error);
     return null;
-  }
-};
-
-// 确认收货
-const handleConfirmShipment = async (record: any) => {
-  if (!selectedAccountId.value) {
-    showInfo('请先选择账号');
-    return;
-  }
-
-  // 从消息内容中提取订单ID
-  const orderId = extractOrderId(record.content);
-  if (!orderId) {
-    showError('无法从消息中提取订单ID');
-    return;
-  }
-
-  try {
-    await showConfirm(`确定要确认收货吗？订单ID: ${orderId}`, '确认收货');
-    
-    const response = await confirmShipment({
-      xianyuAccountId: selectedAccountId.value,
-      orderId: orderId
-    });
-
-    if (response.code === 0 || response.code === 200) {
-      showSuccess('确认收货成功');
-      // 刷新记录列表
-      loadDeliveryRecords();
-    }
-  } catch (error: any) {
-    if (error === 'cancel') {
-      // 用户取消操作
-      return;
-    }
-    console.error('确认收货失败:', error);
   }
 };
 
@@ -500,6 +515,23 @@ onMounted(() => {
                   />
                 </el-form-item>
 
+                <el-form-item label="自动确认发货">
+                  <el-switch
+                    v-model="configForm.autoConfirmShipment"
+                    :active-value="1"
+                    :inactive-value="0"
+                    :disabled="selectedGoods.xianyuAutoDeliveryOn !== 1"
+                  />
+                  <span class="switch-label">
+                    {{ configForm.autoConfirmShipment === 1 ? '已开启' : '已关闭' }}
+                  </span>
+                  <div class="form-tip">
+                    {{ selectedGoods.xianyuAutoDeliveryOn === 1 
+                      ? '开启后，自动发货成功将自动确认收货' 
+                      : '需要先开启自动发货' }}
+                  </div>
+                </el-form-item>
+
                 <el-form-item>
                   <div class="save-config-container">
                     <el-button type="primary" :loading="saving" @click="saveConfig">
@@ -550,7 +582,12 @@ onMounted(() => {
                   style="width: 100%"
                   :max-height="recordsExpanded ? 'calc(100vh - 250px)' : 400"
                 >
-                  <el-table-column type="index" label="ID" width="60" align="center" />
+                  <el-table-column type="index" label="序号" width="60" align="center" />
+                  <el-table-column prop="orderId" label="订单ID" width="180">
+                    <template #default="{ row }">
+                      <span class="order-id">{{ row.orderId || '-' }}</span>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="buyerUserId" label="买家ID" width="120">
                     <template #default="{ row }">
                       {{ row.buyerUserId || '-' }}
@@ -566,16 +603,35 @@ onMounted(() => {
                       <div class="content-text">{{ row.content || '-' }}</div>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="state" label="状态" width="80" align="center">
+                  <el-table-column prop="state" label="自动发货结果" width="120" align="center">
                     <template #default="{ row }">
                       <el-tag :type="getRecordStatusType(row.state)" size="small">
                         {{ getRecordStatusText(row.state) }}
                       </el-tag>
                     </template>
                   </el-table-column>
+                  <el-table-column prop="orderState" label="确认发货" width="100" align="center">
+                    <template #default="{ row }">
+                      <el-tag :type="row.orderState === 1 ? 'success' : 'info'" size="small">
+                        {{ row.orderState === 1 ? '已确认' : '未确认' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="createTime" label="发货时间" width="180">
                     <template #default="{ row }">
                       {{ formatTime(row.createTime) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="120" align="center" fixed="right">
+                    <template #default="{ row }">
+                      <el-button
+                        type="primary"
+                        size="small"
+                        :disabled="!row.orderId || row.orderState === 1"
+                        @click="handleConfirmShipment(row)"
+                      >
+                        确认收货
+                      </el-button>
                     </template>
                   </el-table-column>
                   <template #empty>
@@ -805,6 +861,13 @@ onMounted(() => {
   color: #606266;
 }
 
+.form-tip {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
 .save-config-container {
   display: flex;
   align-items: center;
@@ -906,5 +969,12 @@ onMounted(() => {
   color: #606266;
   line-height: 1.5;
   word-break: break-all;
+}
+
+.order-id {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #409eff;
+  font-weight: 500;
 }
 </style>

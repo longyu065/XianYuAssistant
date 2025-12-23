@@ -180,6 +180,7 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "xy_goods_id VARCHAR(100) NOT NULL, " +
             "type TINYINT DEFAULT 1, " +
             "auto_delivery_content TEXT, " +
+            "auto_confirm_shipment TINYINT DEFAULT 0, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "update_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
@@ -197,6 +198,8 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "buyer_user_name VARCHAR(100), " +
             "content TEXT, " +
             "state TINYINT DEFAULT 0, " +
+            "order_id VARCHAR(100), " +
+            "order_state TINYINT DEFAULT 0, " +
             "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
@@ -286,6 +289,11 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
         deliveryRecordColumns.add(new ColumnDef("order_id", "VARCHAR(100)", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN order_id VARCHAR(100)"));
         deliveryRecordColumns.add(new ColumnDef("order_state", "TINYINT", "ALTER TABLE xianyu_goods_auto_delivery_record ADD COLUMN order_state TINYINT DEFAULT 0"));
         tableColumns.put("xianyu_goods_auto_delivery_record", deliveryRecordColumns);
+        
+        // xianyu_goods_auto_delivery_config 表需要的字段
+        List<ColumnDef> deliveryConfigColumns = new ArrayList<>();
+        deliveryConfigColumns.add(new ColumnDef("auto_confirm_shipment", "TINYINT", "ALTER TABLE xianyu_goods_auto_delivery_config ADD COLUMN auto_confirm_shipment TINYINT DEFAULT 0"));
+        tableColumns.put("xianyu_goods_auto_delivery_config", deliveryConfigColumns);
         
         int addedCount = 0;
         for (Map.Entry<String, List<ColumnDef>> entry : tableColumns.entrySet()) {

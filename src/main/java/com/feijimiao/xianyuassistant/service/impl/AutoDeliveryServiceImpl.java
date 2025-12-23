@@ -321,6 +321,8 @@ public class AutoDeliveryServiceImpl implements AutoDeliveryService {
             dto.setBuyerUserName(record.getBuyerUserName());
             dto.setContent(record.getContent());
             dto.setState(record.getState());
+            dto.setOrderId(record.getOrderId());
+            dto.setOrderState(record.getOrderState());
             dto.setCreateTime(record.getCreateTime());
             recordDTOs.add(dto);
         }

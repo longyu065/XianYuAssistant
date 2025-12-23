@@ -42,12 +42,6 @@ import { RouterView } from 'vue-router'
           <el-menu-item index="/records">
             <span>📝 操作记录</span>
           </el-menu-item>
-          
-          <el-divider content-position="left">系统</el-divider>
-          
-          <el-menu-item index="/qrlogin">
-            <span>📱 扫码登录</span>
-          </el-menu-item>
         </el-menu>
       </el-aside>
       

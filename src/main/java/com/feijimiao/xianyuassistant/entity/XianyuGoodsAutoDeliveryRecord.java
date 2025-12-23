@@ -59,7 +59,7 @@ public class XianyuGoodsAutoDeliveryRecord {
     private String orderId;
     
     /**
-     * 订单状态：1-已发货，0-未发货，-1-自动确认发货失败
+     * 确认发货状态：0-未确认发货，1-已确认发货
      */
     private Integer orderState;
     

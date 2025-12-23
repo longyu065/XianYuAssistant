@@ -9,6 +9,7 @@ export interface AutoDeliveryConfig {
   xyGoodsId: string;
   type: number; // 1-文本，2-自定义
   autoDeliveryContent: string;
+  autoConfirmShipment?: number; // 自动确认发货开关：0-关闭，1-开启
   createTime: string;
   updateTime: string;
 }
@@ -20,6 +21,7 @@ export interface SaveAutoDeliveryConfigReq {
   xyGoodsId: string;
   type: number;
   autoDeliveryContent: string;
+  autoConfirmShipment?: number; // 自动确认发货开关：0-关闭，1-开启
 }
 
 // 查询配置请求

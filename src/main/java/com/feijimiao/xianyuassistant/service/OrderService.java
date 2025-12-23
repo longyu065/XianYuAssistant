@@ -10,7 +10,7 @@ public interface OrderService {
      *
      * @param accountId 账号ID
      * @param orderId 订单ID
-     * @return 是否成功
+     * @return 成功返回提示信息，失败返回null
      */
-    boolean confirmShipment(Long accountId, String orderId);
+    String confirmShipment(Long accountId, String orderId);
 }

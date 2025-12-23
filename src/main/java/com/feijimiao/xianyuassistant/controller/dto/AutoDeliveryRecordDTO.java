@@ -54,6 +54,16 @@ public class AutoDeliveryRecordDTO {
     private Integer state;
     
     /**
+     * 订单ID
+     */
+    private String orderId;
+    
+    /**
+     * 确认发货状态：0-未确认发货，1-已确认发货
+     */
+    private Integer orderState;
+    
+    /**
      * 创建时间
      */
     private String createTime;

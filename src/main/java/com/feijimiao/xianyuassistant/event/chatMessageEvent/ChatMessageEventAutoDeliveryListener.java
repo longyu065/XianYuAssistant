@@ -10,6 +10,7 @@ import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryConfigMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryRecordMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsConfigMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsInfoMapper;
+import com.feijimiao.xianyuassistant.service.OrderService;
 import com.feijimiao.xianyuassistant.service.WebSocketService;
 import com.feijimiao.xianyuassistant.utils.HumanLikeDelayUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,9 @@ public class ChatMessageEventAutoDeliveryListener {
     
     @Autowired
     private WebSocketService webSocketService;
+    
+    @Autowired
+    private OrderService orderService;
     
     /**
      * 处理聊天消息接收事件 - 判断并执行自动发货
@@ -132,8 +136,13 @@ public class ChatMessageEventAutoDeliveryListener {
             record.setPnmId(message.getPnmId()); // 设置消息pnmId，用于防重复
             record.setBuyerUserId(message.getSenderUserId());
             record.setBuyerUserName(buyerUserName);
+            record.setOrderId(message.getOrderId()); // 设置订单ID
             record.setContent(null); // 内容稍后设置
             record.setState(0); // 0=待发货
+            
+            log.info("【账号{}】准备创建发货记录: pnmId={}, xyGoodsId={}, buyerUserName={}, orderId={}", 
+                    message.getXianyuAccountId(), message.getPnmId(), message.getXyGoodsId(), 
+                    buyerUserName, message.getOrderId());
             
             int result;
             try {
@@ -149,16 +158,17 @@ public class ChatMessageEventAutoDeliveryListener {
             }
             
             if (result > 0) {
-                log.info("【账号{}】创建发货记录成功: recordId={}, pnmId={}, xyGoodsId={}, buyerUserName={}, state=0（待发货）", 
+                log.info("【账号{}】✅ 创建发货记录成功: recordId={}, pnmId={}, xyGoodsId={}, buyerUserName={}, orderId={}, state=0（待发货）", 
                         message.getXianyuAccountId(), record.getId(), message.getPnmId(),
-                        message.getXyGoodsId(), buyerUserName);
+                        message.getXyGoodsId(), buyerUserName, message.getOrderId());
                 
                 // 执行自动发货
                 executeAutoDelivery(record.getId(), message.getXianyuAccountId(), 
-                        message.getXyGoodsId(), message.getSId());
+                        message.getXyGoodsId(), message.getSId(), message.getOrderId());
             } else {
-                log.error("【账号{}】创建发货记录失败: pnmId={}, xyGoodsId={}", 
-                        message.getXianyuAccountId(), message.getPnmId(), message.getXyGoodsId());
+                log.error("【账号{}】❌ 创建发货记录失败: pnmId={}, xyGoodsId={}, orderId={}", 
+                        message.getXianyuAccountId(), message.getPnmId(), message.getXyGoodsId(), 
+                        message.getOrderId());
             }
             
         } catch (Exception e) {
@@ -174,8 +184,9 @@ public class ChatMessageEventAutoDeliveryListener {
      * @param accountId 账号ID
      * @param xyGoodsId 商品ID
      * @param sId 会话ID
+     * @param orderId 订单ID
      */
-    private void executeAutoDelivery(Long recordId, Long accountId, String xyGoodsId, String sId) {
+    private void executeAutoDelivery(Long recordId, Long accountId, String xyGoodsId, String sId, String orderId) {
         try {
             log.info("【账号{}】开始执行自动发货: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId);
             
@@ -214,17 +225,58 @@ public class ChatMessageEventAutoDeliveryListener {
             
             // 6. 更新发货记录状态和内容
             if (success) {
-                log.info("【账号{}】自动发货成功: recordId={}, xyGoodsId={}, content={}", 
+                log.info("【账号{}】✅ 自动发货成功: recordId={}, xyGoodsId={}, content={}", 
                         accountId, recordId, xyGoodsId, content);
                 updateRecordState(recordId, 1, content);
+                
+                // 7. 检查是否需要自动确认发货
+                if (deliveryConfig.getAutoConfirmShipment() != null && deliveryConfig.getAutoConfirmShipment() == 1) {
+                    log.info("【账号{}】🚀 检测到自动确认发货开关已开启，准备自动确认发货: orderId={}", accountId, orderId);
+                    executeAutoConfirmShipment(accountId, orderId);
+                } else {
+                    log.info("【账号{}】自动确认发货开关未开启，跳过自动确认发货", accountId);
+                }
             } else {
-                log.error("【账号{}】自动发货失败: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId);
+                log.error("【账号{}】❌ 自动发货失败: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId);
                 updateRecordState(recordId, -1, content);
             }
             
         } catch (Exception e) {
             log.error("【账号{}】执行自动发货异常: recordId={}, xyGoodsId={}", accountId, recordId, xyGoodsId, e);
             updateRecordState(recordId, -1, null);
+        }
+    }
+    
+    /**
+     * 执行自动确认发货
+     * 
+     * @param accountId 账号ID
+     * @param orderId 订单ID
+     */
+    private void executeAutoConfirmShipment(Long accountId, String orderId) {
+        try {
+            if (orderId == null || orderId.isEmpty()) {
+                log.warn("【账号{}】⚠️ 订单ID为空，无法自动确认发货", accountId);
+                return;
+            }
+            
+            log.info("【账号{}】开始自动确认发货: orderId={}", accountId, orderId);
+            
+            // 模拟人工操作延迟（等待一段时间再确认发货）
+            log.info("【账号{}】模拟人工操作延迟（等待后确认发货）...", accountId);
+            HumanLikeDelayUtils.longDelay(); // 较长延迟，模拟真实操作
+            
+            // 调用确认发货服务
+            String result = orderService.confirmShipment(accountId, orderId);
+            
+            if (result != null) {
+                log.info("【账号{}】✅ 自动确认发货成功: orderId={}, result={}", accountId, orderId, result);
+            } else {
+                log.error("【账号{}】❌ 自动确认发货失败: orderId={}", accountId, orderId);
+            }
+            
+        } catch (Exception e) {
+            log.error("【账号{}】自动确认发货异常: orderId={}", accountId, orderId, e);
         }
     }
     

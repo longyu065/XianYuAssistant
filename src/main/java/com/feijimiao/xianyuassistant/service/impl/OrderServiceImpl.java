@@ -1,6 +1,7 @@
 package com.feijimiao.xianyuassistant.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryRecordMapper;
 import com.feijimiao.xianyuassistant.service.AccountService;
 import com.feijimiao.xianyuassistant.service.OrderService;
 import com.feijimiao.xianyuassistant.utils.XianyuSignUtils;
@@ -28,6 +29,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private AccountService accountService;
+    
+    @Autowired
+    private XianyuGoodsAutoDeliveryRecordMapper autoDeliveryRecordMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -40,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private static final String CONFIRM_SHIPMENT_URL = "https://h5api.m.goofish.com/h5/mtop.taobao.idle.logistic.consign.dummy/1.0/";
 
     @Override
-    public boolean confirmShipment(Long accountId, String orderId) {
+    public String confirmShipment(Long accountId, String orderId) {
         try {
             log.info("【账号{}】开始确认发货: orderId={}", accountId, orderId);
 
@@ -48,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
             String cookieStr = accountService.getCookieByAccountId(accountId);
             if (cookieStr == null || cookieStr.isEmpty()) {
                 log.error("【账号{}】未找到Cookie", accountId);
-                return false;
+                return null;
             }
 
             // 解析Cookie
@@ -58,7 +62,7 @@ public class OrderServiceImpl implements OrderService {
             String token = XianyuSignUtils.extractToken(cookies);
             if (token.isEmpty()) {
                 log.error("【账号{}】Cookie中缺少_m_h5_tk字段", accountId);
-                return false;
+                return null;
             }
 
             // 生成时间戳
@@ -139,18 +143,49 @@ public class OrderServiceImpl implements OrderService {
             if (result.containsKey("ret")) {
                 @SuppressWarnings("unchecked")
                 java.util.List<String> ret = (java.util.List<String>) result.get("ret");
-                if (ret != null && !ret.isEmpty() && ret.get(0).contains("SUCCESS")) {
-                    log.info("【账号{}】✅ 确认发货成功: orderId={}", accountId, orderId);
-                    return true;
+                if (ret != null && !ret.isEmpty()) {
+                    String retCode = ret.get(0);
+                    
+                    // 成功情况
+                    if (retCode.contains("SUCCESS")) {
+                        log.info("【账号{}】✅ 确认发货成功: orderId={}", accountId, orderId);
+                        // 更新确认发货状态为1
+                        updateOrderStateToConfirmed(accountId, orderId);
+                        return "确认发货成功";
+                    }
+                    
+                    // 已经发货的情况，也视为成功
+                    if (retCode.contains("ORDER_ALREADY_DELIVERY")) {
+                        log.info("【账号{}】✅ 订单已经发货成功: orderId={}", accountId, orderId);
+                        // 更新确认发货状态为1
+                        updateOrderStateToConfirmed(accountId, orderId);
+                        return "订单已经发货成功";
+                    }
                 }
             }
 
             log.error("【账号{}】❌ 确认发货失败: {}", accountId, result);
-            return false;
+            return null;
 
         } catch (Exception e) {
             log.error("【账号{}】确认发货异常: orderId={}", accountId, orderId, e);
-            return false;
+            return null;
+        }
+    }
+    
+    /**
+     * 更新确认发货状态为已确认
+     */
+    private void updateOrderStateToConfirmed(Long accountId, String orderId) {
+        try {
+            int rows = autoDeliveryRecordMapper.updateOrderState(accountId, orderId, 1);
+            if (rows > 0) {
+                log.info("【账号{}】✅ 更新确认发货状态成功: orderId={}, orderState=1", accountId, orderId);
+            } else {
+                log.warn("【账号{}】⚠️ 未找到对应的发货记录: orderId={}", accountId, orderId);
+            }
+        } catch (Exception e) {
+            log.error("【账号{}】❌ 更新确认发货状态失败: orderId={}", accountId, orderId, e);
         }
     }
 }
