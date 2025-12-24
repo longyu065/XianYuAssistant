@@ -27,6 +27,9 @@ import { RouterView } from 'vue-router'
           <el-menu-item index="/goods">
             <span>📦 商品管理</span>
           </el-menu-item>
+          <el-menu-item index="/orders">
+            <span>📋 订单管理</span>
+          </el-menu-item>
           <el-menu-item index="/messages">
             <span>💬 消息管理</span>
           </el-menu-item>
