@@ -3,13 +3,15 @@
 <div align="center">
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Java](https://img.shields.io/badge/Java-17+-orange.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)
-![Vue](https://img.shields.io/badge/Vue-3.x-green.svg)
+![Java](https://img.shields.io/badge/Java-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen.svg)
+![Vue](https://img.shields.io/badge/Vue-3.5-green.svg)
 
 一个功能强大的闲鱼店铺自动化管理工具，支持自动发货、自动回复、消息管理等功能。
 
-[功能特性](#功能特性) • [快速开始](#快速开始) • [使用指南](#使用指南) • [截图展示](#截图展示) • [技术栈](#技术栈) • [常见问题](#常见问题)
+
+
+[功能特性](#功能特性) • [部署方式](#部署方式) • [使用指南](#使用指南) • [截图展示](#截图展示) • [技术栈](#技术栈) • [常见问题](#常见问题)
 
 </div>
 
@@ -77,53 +79,143 @@
 
 ---
 
-## 🚀 快速开始
+## 🚀 部署方式
 
-### 环境要求
+### 方式一：JAR包部署（推荐）
 
-- **Java**: 17 或更高版本
-- **Node.js**: 20.19.0 或更高版本
-- **Maven**: 3.6+ (可选，项目包含 Maven Wrapper)
+适合快速体验和生产环境使用，无需安装开发环境。
 
-### 安装步骤
+#### 环境要求
 
-#### 1. 克隆项目
+- **Java**: 21 或更高版本
 
+#### 部署步骤
+
+1. **下载JAR包**
+
+   前往 [Releases](https://github.com/IAMLZY2018/-XianYuAssistant/releases) 页面下载最新版本的 `xianyu-assistant.jar`
+
+   
+
+2. **启动应用**
+
+   ```bash
+   java -jar xianyu-assistant.jar
+   ```
+
+3. **访问应用**
+
+   打开浏览器访问: `http://localhost:12400`
+
+#### 后台运行（可选）
+
+**Windows:**
 ```bash
-git clone https://github.com/your-username/xianyu-assistant.git
-cd xianyu-assistant
+start /b java -jar xianyu-assistant.jar
 ```
 
-#### 2. 构建前端
-
+**Linux/Mac:**
 ```bash
-cd vue-code
-npm install
-npm run build
-cd ..
+nohup java -jar xianyu-assistant.jar &
 ```
 
-#### 3. 启动后端
+---
 
-**使用 Maven Wrapper (推荐)**
+### 方式二：Docker部署
+
+适合容器化部署和服务器环境，自动完成所有构建步骤。
+
+#### 环境要求
+
+- **Docker**: 20.10+ 
+- **Docker Compose**: 2.0+ (可选)
+
+#### 本地Docker部署
+
+1. **克隆项目**
+
+   ```bash
+   # Gitee (国内推荐)
+   git clone https://gitee.com/lzy2018cn/xian-yu-assistant.git
+   
+   # 或 GitHub
+   git clone https://github.com/IAMLZY2018/-XianYuAssistant.git
+   
+   cd xian-yu-assistant
+   ```
+
+2. **启动服务**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **查看日志**
+
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **访问应用**
+
+   打开浏览器访问: `http://localhost:12400`
+
+#### 服务器Docker部署
+
+1. **SSH连接到服务器**
+
+   ```bash
+   ssh username@your-server-ip
+   ```
+
+2. **安装Docker（如未安装）**
+
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   ```
+
+3. **克隆并启动**
+
+   ```bash
+   cd /opt
+   
+   # Gitee (国内推荐)
+   git clone https://gitee.com/lzy2018cn/xian-yu-assistant.git
+   
+   # 或 GitHub
+   git clone https://github.com/IAMLZY2018/-XianYuAssistant.git
+   
+   cd xian-yu-assistant
+   docker compose up -d
+   ```
+
+4. **访问应用**
+
+   打开浏览器访问: `http://your-server-ip:12400`
+
+#### Docker常用命令
 
 ```bash
-# Windows
-mvnw.cmd spring-boot:run
+# 停止服务
+docker-compose down
 
-# Linux/Mac
-./mvnw spring-boot:run
+# 重启服务
+docker-compose restart
+
+# 查看日志
+docker-compose logs -f
+
+# 更新服务
+git pull
+docker-compose up -d --build
 ```
 
-**或使用 Maven**
+#### 更多Docker部署信息
 
-```bash
-mvn spring-boot:run
-```
-
-#### 4. 访问应用
-
-打开浏览器访问: `http://localhost:12400`
+- [完整Docker部署指南](DOCKER_DEPLOY.md) - 详细的Docker配置和故障排查
+- [服务器部署指南](SERVER_DEPLOY.md) - 生产环境部署、Nginx配置、HTTPS等
 
 ---
 
@@ -202,18 +294,20 @@ mvn spring-boot:run
 
 ### 后端
 
-- **Spring Boot 3.x** - 应用框架
-- **MyBatis-Plus** - ORM框架
+- **Java 21** - 编程语言
+- **Spring Boot 3.5.7** - 应用框架
+- **MyBatis-Plus 3.5.5** - ORM框架
 - **SQLite** - 嵌入式数据库
 - **WebSocket** - 实时通信
+- **OkHttp** - HTTP客户端
 - **Lombok** - 简化代码
 
 ### 前端
 
-- **Vue 3** - 渐进式框架
-- **TypeScript** - 类型安全
+- **Vue 3.5** - 渐进式框架
+- **TypeScript 5.x** - 类型安全
 - **Element Plus** - UI组件库
-- **Vite** - 构建工具
+- **Vite 7.x** - 构建工具
 - **Axios** - HTTP客户端
 - **Pinia** - 状态管理
 
@@ -249,53 +343,78 @@ xianyu-assistant/
 
 ---
 
-## 🐳 Docker部署
+## 📝 开发指南
 
-推荐使用Docker部署，简单快捷！
+### 从源码构建
 
-### 本地部署
+如果你想从源码构建项目（开发者模式）：
 
-详细说明请查看 [Docker部署指南](DOCKER_DEPLOY.md)
+#### 环境要求
+
+- **Java**: 21 或更高版本
+- **Node.js**: 20.19.0 或更高版本
+- **Maven**: 3.6+ (可选，项目包含 Maven Wrapper)
+
+#### 构建步骤
+
+1. **克隆项目**
+
+   ```bash
+   # Gitee (国内推荐)
+   git clone https://gitee.com/lzy2018cn/xian-yu-assistant.git
+   
+   # 或 GitHub
+   git clone https://github.com/IAMLZY2018/-XianYuAssistant.git
+   
+   cd xian-yu-assistant
+   ```
+
+2. **构建前端**
+
+   ```bash
+   cd vue-code
+   npm install
+   npm run build
+   cd ..
+   ```
+
+3. **启动后端**
+
+   ```bash
+   # Windows
+   mvnw.cmd spring-boot:run
+
+   # Linux/Mac
+   ./mvnw spring-boot:run
+   ```
+
+4. **访问应用**
+
+   打开浏览器访问: `http://localhost:12400`
+
+### 前端开发模式
 
 ```bash
-# 克隆项目
-git clone https://github.com/your-username/xianyu-assistant.git
-cd xianyu-assistant
-
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
+cd vue-code
+npm install
+npm run dev
 ```
 
-访问: `http://localhost:12400`
+访问: `http://localhost:5173`
 
-### 服务器部署
-
-如需部署到服务器，请查看 [服务器部署指南](SERVER_DEPLOY.md)
-
-**快速部署到服务器：**
+### 构建生产版本
 
 ```bash
-# 1. SSH连接到服务器
-ssh username@your-server-ip
+# 构建前端
+cd vue-code
+npm run build
 
-# 2. 安装Docker（如未安装）
-curl -fsSL https://get.docker.com | sh
-
-# 3. 克隆并启动
-cd /opt
-git clone https://github.com/your-username/xianyu-assistant.git
-cd xianyu-assistant
-docker compose up -d
+# 构建后端JAR包
+cd ..
+mvn clean package
 ```
 
-**更多内容:**
-- [完整Docker部署指南](DOCKER_DEPLOY.md)
-- [服务器部署详细步骤](SERVER_DEPLOY.md)
-- [故障排查](DOCKER_DEPLOY.md#故障排查)
-- [生产环境配置](DOCKER_DEPLOY.md#生产环境部署建议)
+生成的JAR包位于: `target/xianyu-assistant.jar`
 
 ---
 
@@ -326,43 +445,20 @@ docker compose up -d
 
 ---
 
-## 📝 开发指南
-
-### 前端开发
-
-```bash
-cd vue-code
-npm install
-npm run dev
-```
-
-访问: `http://localhost:5173`
-
-### 后端开发
-
-```bash
-mvn spring-boot:run
-```
-
-访问: `http://localhost:12400`
-
-### 构建生产版本
-
-```bash
-# 构建前端
-cd vue-code
-npm run build
-
-# 构建后端
-cd ..
-mvn clean package
-```
-
----
-
 ## 🤝 贡献指南
 
+感谢Python版本提供的参考：
+
+https://github.com/zhinianboke/xianyu-auto-reply
+
 欢迎提交Issue和Pull Request！
+
+**仓库地址:**
+
+- 🇨🇳 Gitee: https://gitee.com/lzy2018cn/xian-yu-assistant
+- 🌍 GitHub: https://github.com/IAMLZY2018/-XianYuAssistant
+
+**贡献步骤:**
 
 1. Fork本项目
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
@@ -389,7 +485,7 @@ mvn clean package
 如有问题或建议，欢迎通过以下方式联系：
 
 - 提交 [Issue](https://github.com/your-username/xianyu-assistant/issues)
-- 发送邮件至: your-email@example.com
+- **联系作者:** https://www.feijimiao.cn/contact
 
 ---
 

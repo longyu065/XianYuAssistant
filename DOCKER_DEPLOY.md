@@ -33,8 +33,13 @@ sudo usermod -aG docker $USER
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/xianyu-assistant.git
-cd xianyu-assistant
+# Gitee (国内推荐)
+git clone https://gitee.com/lzy2018cn/xian-yu-assistant.git
+
+# 或 GitHub
+git clone https://github.com/IAMLZY2018/-XianYuAssistant.git
+
+cd xian-yu-assistant
 
 # 2. 启动服务
 docker-compose up -d
@@ -405,7 +410,7 @@ docker stats xianyu-assistant --no-stream
 
 1. 查看 [常见问题](README.md#常见问题)
 2. 查看容器日志: `docker-compose logs -f`
-3. 提交 [Issue](https://github.com/your-username/xianyu-assistant/issues)
+3. 提交 [Issue (Gitee)](https://gitee.com/lzy2018cn/xian-yu-assistant/issues) 或 [Issue (GitHub)](https://github.com/IAMLZY2018/-XianYuAssistant/issues)
 
 ---
 
