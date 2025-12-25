@@ -41,7 +41,7 @@ RUN mkdir -p /app/data
 COPY --from=backend-builder /app/target/*.jar app.jar
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 12400
 
 # 设置环境变量
 ENV JAVA_OPTS="-Xms256m -Xmx512m" \
@@ -49,7 +49,7 @@ ENV JAVA_OPTS="-Xms256m -Xmx512m" \
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:12400/api/health || exit 1
 
 # 启动应用
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
