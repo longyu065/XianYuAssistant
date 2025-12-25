@@ -32,6 +32,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private XianyuGoodsAutoDeliveryRecordMapper autoDeliveryRecordMapper;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.TokenRefreshService tokenRefreshService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -47,6 +50,13 @@ public class OrderServiceImpl implements OrderService {
     public String confirmShipment(Long accountId, String orderId) {
         try {
             log.info("【账号{}】开始确认发货: orderId={}", accountId, orderId);
+
+            // 在调用API前先刷新_m_h5_tk token，确保token有效
+            log.info("【账号{}】调用API前刷新_m_h5_tk token...", accountId);
+            boolean refreshSuccess = tokenRefreshService.refreshMh5tkToken(accountId);
+            if (!refreshSuccess) {
+                log.warn("【账号{}】⚠️ Token刷新失败，继续使用现有token尝试", accountId);
+            }
 
             // 获取Cookie
             String cookieStr = accountService.getCookieByAccountId(accountId);
@@ -160,6 +170,12 @@ public class OrderServiceImpl implements OrderService {
                         // 更新确认发货状态为1
                         updateOrderStateToConfirmed(accountId, orderId);
                         return "订单已经发货成功";
+                    }
+                    
+                    // Token过期
+                    if (retCode.contains("TOKEN_EXOIRED") || retCode.contains("TOKEN_EXPIRED")) {
+                        log.warn("【账号{}】⚠️ Token已过期: orderId={}", accountId, orderId);
+                        return null; // 返回null表示失败，前端会显示"确认发货失败"
                     }
                 }
             }

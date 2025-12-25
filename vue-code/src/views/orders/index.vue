@@ -131,6 +131,10 @@ const handleConfirmShipment = async (record: any) => {
       showSuccess(response.data || '确认收货成功');
       await loadDeliveryRecords();
     } else {
+      // 检查是否是token过期错误
+      if (response.msg && response.msg.includes('Token') || response.msg && response.msg.includes('令牌')) {
+        throw new Error('Cookie已过期，请重新扫码登录获取新的Cookie');
+      }
       throw new Error(response.msg || '确认收货失败');
     }
   } catch (error: any) {

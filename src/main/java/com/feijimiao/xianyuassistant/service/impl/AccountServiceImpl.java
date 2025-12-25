@@ -14,6 +14,7 @@ import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryConfigMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoDeliveryRecordMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoReplyConfigMapper;
 import com.feijimiao.xianyuassistant.mapper.XianyuGoodsAutoReplyRecordMapper;
+import com.feijimiao.xianyuassistant.mapper.XianyuOperationLogMapper;
 import com.feijimiao.xianyuassistant.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,9 @@ public class AccountServiceImpl implements AccountService {
     
     @Autowired
     private XianyuGoodsAutoReplyRecordMapper autoReplyRecordMapper;
+    
+    @Autowired
+    private XianyuOperationLogMapper operationLogMapper;
     
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
@@ -457,13 +461,17 @@ public class AccountServiceImpl implements AccountService {
             int autoReplyRecordCount = autoReplyRecordMapper.deleteByAccountId(accountId);
             log.info("删除自动回复记录数据: accountId={}, 删除数量={}", accountId, autoReplyRecordCount);
             
-            // 8. 删除闲鱼Cookie表数据
+            // 8. 删除操作记录表数据
+            int operationLogCount = operationLogMapper.deleteByAccountId(accountId);
+            log.info("删除操作记录数据: accountId={}, 删除数量={}", accountId, operationLogCount);
+            
+            // 9. 删除闲鱼Cookie表数据
             LambdaQueryWrapper<XianyuCookie> cookieQuery = new LambdaQueryWrapper<>();
             cookieQuery.eq(XianyuCookie::getXianyuAccountId, accountId);
             int cookieCount = cookieMapper.delete(cookieQuery);
             log.info("删除Cookie数据: accountId={}, 删除数量={}", accountId, cookieCount);
             
-            // 9. 删除闲鱼账号表数据
+            // 10. 删除闲鱼账号表数据
             int accountCount = accountMapper.deleteById(accountId);
             log.info("删除账号数据: accountId={}, 删除数量={}", accountId, accountCount);
             

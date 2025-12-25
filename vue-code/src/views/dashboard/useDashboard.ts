@@ -15,9 +15,11 @@ export function useDashboard() {
     try {
       const res = await getDashboardStats()
       if (res.code === 0 || res.code === 200) {
-        stats.accountCount = res.data.accountCount
-        stats.goodsCount = res.data.itemCount
-        stats.onlineGoodsCount = res.data.sellingItemCount
+        if (res.data) {
+          stats.accountCount = res.data.accountCount || 0
+          stats.goodsCount = res.data.itemCount || 0
+          stats.onlineGoodsCount = res.data.sellingItemCount || 0
+        }
       }
     } catch (error) {
       console.error('加载统计数据失败:', error)

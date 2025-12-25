@@ -345,10 +345,14 @@ const handleConfirmShipment = async (record: any) => {
 
     const response = await confirmShipment(req);
     if (response.code === 0 || response.code === 200) {
-      showSuccess('确认收货成功');
+      showSuccess(response.data || '确认收货成功');
       // 刷新记录列表
       await loadDeliveryRecords();
     } else {
+      // 检查是否是token过期错误
+      if (response.msg && (response.msg.includes('Token') || response.msg.includes('令牌'))) {
+        throw new Error('Cookie已过期，请重新扫码登录获取新的Cookie');
+      }
       throw new Error(response.msg || '确认收货失败');
     }
   } catch (error: any) {

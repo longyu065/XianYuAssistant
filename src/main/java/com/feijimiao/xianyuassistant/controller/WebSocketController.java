@@ -24,6 +24,9 @@ public class WebSocketController {
     
     @Autowired
     private org.springframework.context.ApplicationContext applicationContext;
+    
+    @Autowired
+    private com.feijimiao.xianyuassistant.service.TokenRefreshService tokenRefreshService;
 
     /**
      * 启动WebSocket连接
@@ -69,9 +72,9 @@ public class WebSocketController {
             log.info("📋 滑块验证信息:");
             log.info("   - 账号ID: {}", reqDTO.getXianyuAccountId());
             log.info("   - 验证URL: {}", e.getCaptchaUrl());
-            log.info("   - 提示: 请在浏览器中完成验证，然后调用 /api/websocket/clearCaptchaWait 清除等待状态");
+            log.info("   - 提示: 请访问 https://www.goofish.com/im 完成验证后手动更新Cookie和Token");
             
-            ResultObject<CaptchaInfoDTO> result = new ResultObject<>(500, "需要滑块验证", captchaInfo);
+            ResultObject<CaptchaInfoDTO> result = new ResultObject<>(1001, "需要滑块验证", captchaInfo);
             return result;
         } catch (com.feijimiao.xianyuassistant.exception.CookieNotFoundException e) {
             log.error("Cookie未找到: accountId={}", reqDTO.getXianyuAccountId());
@@ -347,6 +350,83 @@ public class WebSocketController {
      * @param cookie Cookie字符串
      * @return UNB值，如果未找到则返回null
      */
+    /**
+     * 手动刷新Token
+     */
+    @PostMapping("/refreshToken")
+    public ResultObject<RefreshTokenRespDTO> refreshToken(@RequestBody RefreshTokenReqDTO reqDTO) {
+        try {
+            log.info("手动刷新Token请求: xianyuAccountId={}", reqDTO.getXianyuAccountId());
+            
+            if (reqDTO.getXianyuAccountId() == null) {
+                return ResultObject.failed("账号ID不能为空");
+            }
+            
+            RefreshTokenRespDTO respDTO = new RefreshTokenRespDTO();
+            
+            // 刷新_m_h5_tk token
+            log.info("【账号{}】开始刷新_m_h5_tk token...", reqDTO.getXianyuAccountId());
+            boolean mh5tkSuccess = tokenRefreshService.refreshMh5tkToken(reqDTO.getXianyuAccountId());
+            respDTO.setMh5tkRefreshed(mh5tkSuccess);
+            
+            // 刷新WebSocket token
+            log.info("【账号{}】开始刷新WebSocket token...", reqDTO.getXianyuAccountId());
+            boolean wsTokenSuccess = tokenRefreshService.refreshWebSocketToken(reqDTO.getXianyuAccountId());
+            respDTO.setWsTokenRefreshed(wsTokenSuccess);
+            
+            if (mh5tkSuccess && wsTokenSuccess) {
+                respDTO.setMessage("✅ 所有Token刷新成功");
+                log.info("【账号{}】✅ 所有Token刷新成功", reqDTO.getXianyuAccountId());
+                return ResultObject.success(respDTO);
+            } else if (mh5tkSuccess || wsTokenSuccess) {
+                respDTO.setMessage("⚠️ 部分Token刷新成功");
+                log.warn("【账号{}】⚠️ 部分Token刷新成功: _m_h5_tk={}, websocket_token={}", 
+                        reqDTO.getXianyuAccountId(), mh5tkSuccess, wsTokenSuccess);
+                return ResultObject.success(respDTO);
+            } else {
+                respDTO.setMessage("❌ Token刷新失败，请检查Cookie是否有效");
+                log.error("【账号{}】❌ Token刷新失败", reqDTO.getXianyuAccountId());
+                return ResultObject.failed("Token刷新失败，请检查Cookie是否有效");
+            }
+            
+        } catch (Exception e) {
+            log.error("手动刷新Token异常: xianyuAccountId={}", reqDTO.getXianyuAccountId(), e);
+            return ResultObject.failed("刷新Token异常: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 手动更新WebSocket Token
+     */
+    @PostMapping("/updateToken")
+    public ResultObject<String> updateToken(@RequestBody UpdateTokenReqDTO reqDTO) {
+        try {
+            log.info("手动更新Token请求: xianyuAccountId={}", reqDTO.getXianyuAccountId());
+            
+            if (reqDTO.getXianyuAccountId() == null) {
+                return ResultObject.failed("账号ID不能为空");
+            }
+            
+            if (reqDTO.getWebsocketToken() == null || reqDTO.getWebsocketToken().trim().isEmpty()) {
+                return ResultObject.failed("WebSocket Token不能为空");
+            }
+            
+            // 获取WebSocketTokenService
+            com.feijimiao.xianyuassistant.service.WebSocketTokenService tokenService = 
+                    applicationContext.getBean(com.feijimiao.xianyuassistant.service.WebSocketTokenService.class);
+            
+            // 保存Token
+            tokenService.saveToken(reqDTO.getXianyuAccountId(), reqDTO.getWebsocketToken().trim());
+            
+            log.info("【账号{}】✅ WebSocket Token手动更新成功", reqDTO.getXianyuAccountId());
+            return ResultObject.success("Token更新成功");
+            
+        } catch (Exception e) {
+            log.error("手动更新Token异常: xianyuAccountId={}", reqDTO.getXianyuAccountId(), e);
+            return ResultObject.failed("更新Token异常: " + e.getMessage());
+        }
+    }
+
     private String extractUnbFromCookie(String cookie) {
         if (cookie == null || cookie.isEmpty()) {
             return null;
@@ -394,6 +474,33 @@ public class WebSocketController {
     @Data
     public static class ClearCaptchaWaitReqDTO {
         private Long xianyuAccountId;  // 账号ID
+    }
+    
+    /**
+     * 手动刷新Token请求DTO
+     */
+    @Data
+    public static class RefreshTokenReqDTO {
+        private Long xianyuAccountId;  // 账号ID
+    }
+    
+    /**
+     * 手动更新Token请求DTO
+     */
+    @Data
+    public static class UpdateTokenReqDTO {
+        private Long xianyuAccountId;    // 账号ID
+        private String websocketToken;   // WebSocket Token
+    }
+    
+    /**
+     * 手动刷新Token响应DTO
+     */
+    @Data
+    public static class RefreshTokenRespDTO {
+        private Boolean mh5tkRefreshed;   // _m_h5_tk是否刷新成功
+        private Boolean wsTokenRefreshed; // websocket_token是否刷新成功
+        private String message;           // 提示信息
     }
 
     /**

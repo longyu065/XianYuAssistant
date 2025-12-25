@@ -62,6 +62,12 @@ const router = createRouter({
       meta: { title: '操作记录', icon: '📝' }
     },
     {
+      path: '/operation-log',
+      name: 'operation-log',
+      component: () => import('@/views/operation-log/index.vue'),
+      meta: { title: '操作记录', icon: '📜' }
+    },
+    {
       path: '/qrlogin',
       name: 'qrlogin',
       component: () => import('@/views/qrlogin/index.vue'),

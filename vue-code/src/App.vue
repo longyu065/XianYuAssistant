@@ -45,6 +45,12 @@ import { RouterView } from 'vue-router'
           <el-menu-item index="/records">
             <span>📝 操作记录</span>
           </el-menu-item>
+          
+          <el-divider content-position="left">系统</el-divider>
+          
+          <el-menu-item index="/operation-log">
+            <span>📜 操作日志</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       
@@ -125,7 +131,7 @@ import { RouterView } from 'vue-router'
 
 .el-main {
   padding: 32px 40px;
-  overflow-y: hidden;
+  overflow-y: auto;
   background: #e8e8e8;
 }
 

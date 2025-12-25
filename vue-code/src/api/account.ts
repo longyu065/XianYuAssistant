@@ -33,7 +33,9 @@ export function deleteAccount(data: { id: number }) {
   return request({
     url: '/account/delete',
     method: 'POST',
-    data
+    data: {
+      accountId: data.id
+    }
   })
 }
 

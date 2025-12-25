@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { ElMessageBox } from 'element-plus';
+import { QuestionFilled } from '@element-plus/icons-vue';
 import { getAccountList } from '@/api/account';
 import { getConnectionStatus, startConnection, stopConnection } from '@/api/websocket';
 import { showSuccess, showError, showInfo } from '@/utils';
 import type { Account, WebSocketStatus } from '@/types';
-import RefreshCookieDialog from './components/RefreshCookieDialog.vue';
 import ManualUpdateCookieDialog from './components/ManualUpdateCookieDialog.vue';
+import ManualUpdateTokenDialog from './components/ManualUpdateTokenDialog.vue';
 
 interface ConnectionStatus {
   xianyuAccountId: number;
@@ -23,13 +24,14 @@ const accounts = ref<Account[]>([]);
 const selectedAccountId = ref<number | null>(null);
 const connectionStatus = ref<ConnectionStatus | null>(null);
 const statusLoading = ref(false);
+const refreshTokenLoading = ref(false);
 const logs = ref<Array<{ time: string; message: string; isError?: boolean }>>([]);
 let statusInterval: number | null = null;
 
-// 扫码刷新Cookie对话框
-const showRefreshCookieDialog = ref(false);
 // 手动更新Cookie对话框
 const showManualUpdateCookieDialog = ref(false);
+// 手动更新Token对话框
+const showManualUpdateTokenDialog = ref(false);
 
 // 当前选中的账号信息
 const currentAccount = computed(() => {
@@ -107,27 +109,36 @@ const handleStartConnection = async () => {
       showSuccess('连接启动成功');
       addLog('连接启动成功');
       await loadConnectionStatus(selectedAccountId.value);
-    } else if (response.code === 500 && response.data?.needCaptcha) {
+    } else if (response.code === 1001 && response.data?.needCaptcha) {
       // 需要滑块验证
-      const captchaUrl = response.data.captchaUrl;
-      addLog('⚠️ 需要完成滑块验证', true);
+      addLog('⚠️ 检测到需要滑块验证', true);
       
       // 显示验证对话框
       await ElMessageBox.confirm(
-        `检测到账号需要完成滑块验证才能启动连接。\n\n点击"打开验证"将在新窗口中打开验证页面，完成验证后请点击"清除等待状态"按钮重试。`,
-        '需要滑块验证',
+        `检测到账号需要完成滑块验证才能启动连接。\n\n` +
+        `📋 操作步骤：\n\n` +
+        `1️⃣ 点击下方"访问闲鱼IM"按钮，打开闲鱼消息页面\n\n` +
+        `2️⃣ 在闲鱼页面完成滑块验证\n\n` +
+        `3️⃣ 验证成功后，点击本页面 Cookie 和 Token 区域的"❓ 如何获取？"按钮\n\n` +
+        `4️⃣ 按照帮助教程获取 Cookie 和 Token\n\n` +
+        `5️⃣ 点击"✏️ 手动更新"按钮，粘贴 Cookie 和 Token\n\n` +
+        `6️⃣ 更新完成后，重新点击"启动连接"即可\n\n` +
+        `💡 提示：帮助按钮中有详细的图文教程，非常简单！`,
+        '🔐 需要滑块验证',
         {
-          confirmButtonText: '打开验证',
+          confirmButtonText: '🌐 访问闲鱼IM',
           cancelButtonText: '取消',
           type: 'warning',
-          distinguishCancelAndClose: true
+          distinguishCancelAndClose: true,
+          customClass: 'captcha-guide-dialog'
         }
       );
       
-      // 打开验证链接
-      window.open(captchaUrl, '_blank', 'width=800,height=600');
-      addLog('已在新窗口打开验证页面，请完成验证后点击"清除等待状态"按钮重试');
-      showInfo('请在新窗口完成验证，然后点击"清除等待状态"按钮重试');
+      // 打开闲鱼IM页面
+      window.open('https://www.goofish.com/im', '_blank');
+      addLog('✅ 已打开闲鱼IM页面');
+      addLog('📌 完成验证后，请点击"❓ 如何获取？"按钮查看教程');
+      showInfo('请在闲鱼IM页面完成验证，然后使用帮助按钮获取Cookie和Token');
     } else {
       throw new Error(response.msg || '启动连接失败');
     }
@@ -288,22 +299,94 @@ const getTokenStatusType = (timestamp?: number) => {
   return isTokenExpired(timestamp) ? 'danger' : 'success';
 };
 
-// 打开扫码刷新Cookie对话框
-const handleRefreshCookie = () => {
-  showRefreshCookieDialog.value = true;
-};
-
 // 打开手动更新Cookie对话框
 const handleManualUpdateCookie = () => {
   showManualUpdateCookieDialog.value = true;
 };
 
-// Cookie刷新成功回调
-const handleRefreshCookieSuccess = async () => {
-  addLog('Cookie已刷新');
-  if (selectedAccountId.value) {
-    await loadConnectionStatus(selectedAccountId.value);
-  }
+// 打开手动更新Token对话框
+const handleManualUpdateToken = () => {
+  showManualUpdateTokenDialog.value = true;
+};
+
+// 显示Cookie获取帮助
+const showCookieHelp = () => {
+  ElMessageBox({
+    title: '如何获取Cookie',
+    message: `
+      <div style="text-align: left;">
+        <p style="margin-bottom: 12px;">请按照以下步骤获取Cookie：</p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+          <li>打开浏览器，访问闲鱼网站并登录</li>
+          <li>按F12打开开发者工具</li>
+          <li>切换到"网络"(Network)标签</li>
+          <li>刷新页面</li>
+          <li>在请求列表中找到任意请求</li>
+          <li>在请求头中找到Cookie字段</li>
+          <li>复制完整的Cookie值</li>
+        </ol>
+        <div style="margin-top: 16px; text-align: center;">
+          <img 
+            src="/cookieGet.png" 
+            class="cookie-help-image"
+            alt="Cookie获取示例" 
+            onerror="this.style.display='none'"
+            onclick="window.open('/cookieGet.png', '_blank')"
+            title="点击查看大图"
+          />
+        </div>
+        <p style="margin-top: 12px; color: #909399; font-size: 12px; text-align: center;">
+          💡 点击图片可查看大图
+        </p>
+        <p style="margin-top: 8px; color: #f56c6c; font-size: 12px; text-align: center;">
+          ⚠️ Cookie包含敏感信息，请勿泄露给他人
+        </p>
+      </div>
+    `,
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: '知道了',
+    customClass: 'cookie-help-dialog'
+  });
+};
+
+// 显示Token获取帮助
+const showTokenHelp = () => {
+  ElMessageBox({
+    title: '如何获取WebSocket Token',
+    message: `
+      <div style="text-align: left;">
+        <p style="margin-bottom: 12px;">请按照以下步骤获取WebSocket Token：</p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+          <li>打开浏览器，访问 <a href="https://www.goofish.com/im" target="_blank" style="color: #409eff;">闲鱼IM页面</a> 并登录</li>
+          <li>按F12打开开发者工具</li>
+          <li>切换到"网络"(Network)标签</li>
+          <li>在页面中进行任意操作（如点击聊天）</li>
+          <li>在请求列表中找到WebSocket连接请求</li>
+          <li>查看请求参数或响应中的Token信息</li>
+          <li>复制完整的Token值</li>
+        </ol>
+        <div style="margin-top: 16px; text-align: center;">
+          <img 
+            src="/tokenGet.png" 
+            class="token-help-image"
+            alt="Token获取示例" 
+            onerror="this.style.display='none'"
+            onclick="window.open('/tokenGet.png', '_blank')"
+            title="点击查看大图"
+          />
+        </div>
+        <p style="margin-top: 12px; color: #909399; font-size: 12px; text-align: center;">
+          💡 点击图片可查看大图
+        </p>
+        <p style="margin-top: 8px; color: #f56c6c; font-size: 12px; text-align: center;">
+          ⚠️ Token包含敏感信息，请勿泄露给他人
+        </p>
+      </div>
+    `,
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: '知道了',
+    customClass: 'token-help-dialog'
+  });
 };
 
 // Cookie手动更新成功回调
@@ -314,11 +397,19 @@ const handleManualUpdateCookieSuccess = async () => {
   }
 };
 
+// Token手动更新成功回调
+const handleManualUpdateTokenSuccess = async () => {
+  addLog('Token已手动更新');
+  if (selectedAccountId.value) {
+    await loadConnectionStatus(selectedAccountId.value);
+  }
+};
+
 onMounted(async () => {
   await loadAccounts();
   // 默认选择第一个账号
   if (accounts.value.length > 0) {
-    selectAccount(accounts.value[0].id);
+    selectAccount(accounts.value[0]?.id || 0);
   }
 });
 
@@ -450,19 +541,19 @@ onUnmounted(() => {
                   </div>
                   <div class="section-actions">
                     <el-button
-                      type="warning"
-                      size="small"
-                      @click="handleRefreshCookie"
-                    >
-                      📱 扫码刷新
-                    </el-button>
-                    <el-button
                       type="primary"
                       size="small"
                       @click="handleManualUpdateCookie"
                       class="manual-update-btn"
                     >
                       ✏️ 手动更新
+                    </el-button>
+                    <el-button
+                      type="info"
+                      size="small"
+                      @click="showCookieHelp"
+                    >
+                      ❓ 如何获取？
                     </el-button>
                   </div>
                 </div>
@@ -500,6 +591,22 @@ onUnmounted(() => {
                       长度: {{ connectionStatus.websocketToken.length }} 字符
                     </div>
                   </div>
+                  <div class="section-actions">
+                    <el-button
+                      type="default"
+                      size="small"
+                      @click="handleManualUpdateToken"
+                    >
+                      ✏️ 手动更新
+                    </el-button>
+                    <el-button
+                      type="info"
+                      size="small"
+                      @click="showTokenHelp"
+                    >
+                      ❓ 如何获取？
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -524,15 +631,6 @@ onUnmounted(() => {
                   class="main-action-btn start-connection-btn"
                 >
                   ▶ 启动连接
-                </el-button>
-                <el-button
-                  type="warning"
-                  size="default"
-                  @click="handleClearCaptchaWait"
-                  class="main-action-btn"
-                  :disabled="!selectedAccountId"
-                >
-                  🔓 清除验证等待
                 </el-button>
                 <div class="action-tip">
                   ⚠️ 请勿频繁启用连接和断开连接，否则容易触发滑动窗口人机校验，导致账号暂时不可用
@@ -563,15 +661,6 @@ onUnmounted(() => {
       </el-card>
     </div>
 
-    <!-- 扫码刷新Cookie对话框 -->
-    <RefreshCookieDialog
-      v-if="currentAccount"
-      v-model="showRefreshCookieDialog"
-      :account-id="currentAccount.id"
-      :current-unb="currentAccount.unb"
-      @success="handleRefreshCookieSuccess"
-    />
-
     <!-- 手动更新Cookie对话框 -->
     <ManualUpdateCookieDialog
       v-if="currentAccount && connectionStatus"
@@ -579,6 +668,15 @@ onUnmounted(() => {
       :account-id="currentAccount.id"
       :current-cookie="connectionStatus.cookieText || ''"
       @success="handleManualUpdateCookieSuccess"
+    />
+
+    <!-- 手动更新Token对话框 -->
+    <ManualUpdateTokenDialog
+      v-if="currentAccount && connectionStatus"
+      v-model="showManualUpdateTokenDialog"
+      :account-id="currentAccount.id"
+      :current-token="connectionStatus.websocketToken || ''"
+      @success="handleManualUpdateTokenSuccess"
     />
   </div>
 </template>
@@ -1119,3 +1217,129 @@ onUnmounted(() => {
   }
 }
 </style>
+
+<style>
+/* Cookie帮助对话框样式 */
+.cookie-help-dialog {
+  max-width: 900px;
+  width: 90%;
+}
+
+.cookie-help-dialog .el-message-box__message {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 隐藏滚动条 - Webkit浏览器 (Chrome, Safari) */
+.cookie-help-dialog .el-message-box__message::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cookie帮助图片样式 */
+.cookie-help-dialog .cookie-help-image {
+  max-width: 100%;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.cookie-help-dialog .cookie-help-image:hover {
+  transform: scale(1.02);
+  border-color: #409eff;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.cookie-help-dialog .cookie-help-image:active {
+  transform: scale(0.98);
+}
+
+/* Token帮助对话框样式 */
+.token-help-dialog {
+  max-width: 900px;
+  width: 90%;
+}
+
+.token-help-dialog .el-message-box__message {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 隐藏滚动条 - Webkit浏览器 (Chrome, Safari) */
+.token-help-dialog .el-message-box__message::-webkit-scrollbar {
+  display: none;
+}
+
+/* Token帮助图片样式 */
+.token-help-dialog .token-help-image {
+  max-width: 100%;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.token-help-dialog .token-help-image:hover {
+  transform: scale(1.02);
+  border-color: #67c23a;
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
+}
+
+.token-help-dialog .token-help-image:active {
+  transform: scale(0.98);
+}
+
+/* 滑块验证引导对话框样式 */
+.captcha-guide-dialog {
+  max-width: 650px;
+  width: 90%;
+}
+
+.captcha-guide-dialog .el-message-box__message {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #606266;
+  white-space: pre-line;
+  text-align: left;
+}
+
+.captcha-guide-dialog .el-message-box__title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.captcha-guide-dialog .el-button--primary {
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  border-color: #409eff;
+  font-weight: 500;
+  padding: 12px 24px;
+}
+
+.captcha-guide-dialog .el-button--primary:hover {
+  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+}
+</style>
+

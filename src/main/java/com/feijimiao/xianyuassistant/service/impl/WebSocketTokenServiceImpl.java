@@ -318,6 +318,44 @@ public class WebSocketTokenServiceImpl implements WebSocketTokenService {
     }
     
     /**
+     * 刷新WebSocket token
+     */
+    @Override
+    public String refreshToken(Long accountId) {
+        try {
+            log.info("【账号{}】开始刷新WebSocket token...", accountId);
+            
+            // 1. 获取Cookie
+            XianyuCookie cookie = xianyuCookieMapper.selectOne(
+                    new LambdaQueryWrapper<XianyuCookie>()
+                            .eq(XianyuCookie::getXianyuAccountId, accountId)
+            );
+            if (cookie == null || cookie.getCookieText() == null) {
+                log.warn("【账号{}】未找到Cookie，无法刷新token", accountId);
+                return null;
+            }
+            
+            // 2. 清除旧token，强制重新获取
+            clearToken(accountId);
+            
+            // 3. 获取新token
+            String newToken = getAccessToken(accountId, cookie.getCookieText(), "device_" + accountId);
+            
+            if (newToken != null && !newToken.isEmpty()) {
+                log.info("【账号{}】✅ WebSocket token刷新成功", accountId);
+                return newToken;
+            } else {
+                log.warn("【账号{}】⚠️ WebSocket token刷新失败", accountId);
+                return null;
+            }
+            
+        } catch (Exception e) {
+            log.error("【账号{}】刷新WebSocket token异常", accountId, e);
+            return null;
+        }
+    }
+    
+    /**
      * 更新账号状态为需要验证（-2）
      */
     private void updateAccountStatusToCaptchaRequired(Long accountId) {

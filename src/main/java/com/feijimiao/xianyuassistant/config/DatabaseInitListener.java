@@ -234,6 +234,27 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
             ")");
         
+        // 操作记录表
+        requiredTables.put("xianyu_operation_log",
+            "CREATE TABLE xianyu_operation_log (" +
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "xianyu_account_id INTEGER NOT NULL, " +
+            "operation_type VARCHAR(50) NOT NULL, " +
+            "operation_module VARCHAR(50), " +
+            "operation_desc VARCHAR(500), " +
+            "operation_status INTEGER DEFAULT 1, " +
+            "target_type VARCHAR(50), " +
+            "target_id VARCHAR(200), " +
+            "request_params TEXT, " +
+            "response_result TEXT, " +
+            "error_message TEXT, " +
+            "ip_address VARCHAR(50), " +
+            "user_agent VARCHAR(500), " +
+            "duration_ms INTEGER, " +
+            "create_time INTEGER NOT NULL, " +
+            "FOREIGN KEY (xianyu_account_id) REFERENCES xianyu_account(id)" +
+            ")");
+        
         // 检查并创建缺失的表
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredTables.entrySet()) {
@@ -433,6 +454,20 @@ public class DatabaseInitListener implements ApplicationListener<ApplicationRead
             "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_state ON xianyu_goods_auto_reply_record(state)");
         requiredIndexes.put("idx_auto_reply_record_create_time",
             "CREATE INDEX IF NOT EXISTS idx_auto_reply_record_create_time ON xianyu_goods_auto_reply_record(create_time)");
+        
+        // 操作记录表索引
+        requiredIndexes.put("idx_operation_log_account_id",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_account_id ON xianyu_operation_log(xianyu_account_id)");
+        requiredIndexes.put("idx_operation_log_type",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_type ON xianyu_operation_log(operation_type)");
+        requiredIndexes.put("idx_operation_log_module",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_module ON xianyu_operation_log(operation_module)");
+        requiredIndexes.put("idx_operation_log_status",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_status ON xianyu_operation_log(operation_status)");
+        requiredIndexes.put("idx_operation_log_create_time",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_create_time ON xianyu_operation_log(create_time)");
+        requiredIndexes.put("idx_operation_log_target",
+            "CREATE INDEX IF NOT EXISTS idx_operation_log_target ON xianyu_operation_log(target_type, target_id)");
         
         int createdCount = 0;
         for (Map.Entry<String, String> entry : requiredIndexes.entrySet()) {

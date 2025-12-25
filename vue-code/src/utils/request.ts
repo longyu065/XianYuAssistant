@@ -29,6 +29,11 @@ service.interceptors.response.use(
     console.log('收到响应:', response.config.url, response.data)
     const res = response.data
 
+    // 特殊处理：1001是滑块验证码，需要业务代码自己处理，不在这里拦截
+    if (res.code === 1001) {
+      return response // 直接返回，让业务代码处理
+    }
+
     // 如果响应码不是 0 或 200，认为是错误
     if (res.code !== 0 && res.code !== 200) {
       const errorMsg = res.msg || res.message || '请求失败'

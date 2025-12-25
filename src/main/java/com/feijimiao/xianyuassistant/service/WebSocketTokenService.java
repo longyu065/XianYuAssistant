@@ -36,4 +36,12 @@ public interface WebSocketTokenService {
      * 清除验证等待状态
      */
     void clearCaptchaWait(Long accountId);
+    
+    /**
+     * 刷新WebSocket token
+     * 
+     * @param accountId 账号ID
+     * @return 新的token，失败返回null
+     */
+    String refreshToken(Long accountId);
 }

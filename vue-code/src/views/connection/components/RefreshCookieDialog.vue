@@ -65,7 +65,6 @@ const startPolling = () => {
             statusText.value = '已扫码，等待确认...'
             break
           case 'confirmed':
-          case 'success':  // 后端返回success状态
             statusText.value = '登录成功！正在获取信息...'
             await handleLoginSuccess()
             break
@@ -93,8 +92,9 @@ const handleLoginSuccess = async () => {
     const cookieRes = await getQRCodeCookies(sessionId.value)
     if (cookieRes.code === 200) {
       // 后端返回的cookies是字符串，unb是单独的字段
-      const cookieText = cookieRes.data?.cookies || ''
-      const scannedUnb = cookieRes.data?.unb || ''
+      const cookieData = cookieRes.data as any
+      const cookieText = typeof cookieData?.cookies === 'string' ? cookieData.cookies : JSON.stringify(cookieData?.cookies || {})
+      const scannedUnb = cookieData?.unb || ''
       
       console.log('扫码UNB:', scannedUnb, '当前UNB:', props.currentUnb)
       

@@ -73,3 +73,28 @@ export function clearCaptchaWait(accountId: number) {
     data: { xianyuAccountId: accountId }
   });
 }
+
+// 刷新Token响应
+export interface RefreshTokenResponse {
+  mh5tkRefreshed: boolean;    // _m_h5_tk是否刷新成功
+  wsTokenRefreshed: boolean;  // websocket_token是否刷新成功
+  message: string;            // 提示信息
+}
+
+// 手动刷新Token
+export function refreshToken(accountId: number) {
+  return request<RefreshTokenResponse>({
+    url: '/websocket/refreshToken',
+    method: 'POST',
+    data: { xianyuAccountId: accountId }
+  });
+}
+
+// 手动更新Token
+export function updateToken(data: { xianyuAccountId: number; websocketToken: string }) {
+  return request<string>({
+    url: '/websocket/updateToken',
+    method: 'POST',
+    data
+  });
+}
