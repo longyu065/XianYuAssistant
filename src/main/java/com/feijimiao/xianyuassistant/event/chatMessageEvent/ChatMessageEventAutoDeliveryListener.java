@@ -19,6 +19,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * 聊天消息自动发货监听器
  *
@@ -127,7 +129,12 @@ public class ChatMessageEventAutoDeliveryListener {
 
             log.info("【账号{}】查询到商品信息: xianyuGoodsId={}, title={}",
                     message.getXianyuAccountId(), goodsInfo.getId(), goodsInfo.getTitle());
-
+            List<XianyuGoodsAutoDeliveryRecord> xianyuGoodsAutoDeliveryRecords = autoDeliveryRecordMapper.selectByAccountIdAndXianyuGoodsIdAndOrderId(message.getXianyuAccountId(), goodsInfo.getId(), message.getOrderId());
+            if(xianyuGoodsAutoDeliveryRecords !=null && !xianyuGoodsAutoDeliveryRecords.isEmpty()){
+                log.warn("【账号{}】已存在发货记录: xyGoodsId={}, orderId={}",
+                        message.getXianyuAccountId(), goodsInfo.getId(), message.getOrderId());
+                return;
+            }
             // 创建发货记录（state=0，待发货）
             XianyuGoodsAutoDeliveryRecord record = new XianyuGoodsAutoDeliveryRecord();
             record.setXianyuAccountId(message.getXianyuAccountId());

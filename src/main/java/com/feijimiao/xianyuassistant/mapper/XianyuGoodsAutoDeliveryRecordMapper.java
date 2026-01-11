@@ -24,7 +24,12 @@ public interface XianyuGoodsAutoDeliveryRecordMapper {
      */
     @Select("SELECT * FROM xianyu_goods_auto_delivery_record WHERE xianyu_account_id = #{accountId} ORDER BY create_time DESC")
     List<XianyuGoodsAutoDeliveryRecord> selectByAccountId(@Param("accountId") Long accountId);
-    
+    /**
+     * 根据账号IDAnd订单查询记录
+     */
+    @Select("SELECT * FROM xianyu_goods_auto_delivery_record WHERE xianyu_account_id = #{accountId} and xianyu_goods_id = #{xianyuGoodsId}  and order_id=#{orderId} ORDER BY create_time DESC")
+    List<XianyuGoodsAutoDeliveryRecord> selectByAccountIdAndXianyuGoodsIdAndOrderId(@Param("accountId") Long accountId, @Param("xianyuGoodsId") Long xianyuGoodsId, @Param("orderId") String orderId);
+
     /**
      * 根据账号ID删除记录
      */
