@@ -11,5 +11,5 @@ public class AccountReqDTO {
     private String accountNote;   // 账号备注
     private String unb;           // UNB标识
     private Integer status;       // 状态
-    private String cookie;        // Cookie字符串（可选）
+    private String cookieText;        // Cookie字符串（可选）
 }

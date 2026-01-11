@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * 同步包消息处理器
  * 处理 /s/para 和 /s/sync 类型的聊天消息
- * 
+ *
  * <p>职责：</p>
  * <ul>
  *   <li>解密同步包中的加密消息</li>
@@ -30,102 +30,102 @@ import java.util.Map;
 @Slf4j
 @Component
 public class SyncMessageHandler extends AbstractLwpHandler {
-    
+
     @Autowired
     private ApplicationEventPublisher eventPublisher;
-    
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public String getLwpPath() {
         return "/s/para"; // 也支持 /s/sync
     }
-    
+
     @Override
     protected Object parseParams(String accountId, Map<String, Object> messageData) {
         try {
             SyncMessageParams params = new SyncMessageParams();
-            
+
             // 获取body
             Map<String, Object> body = getMap(messageData, "body");
             if (body == null) {
                 return null;
             }
-            
+
             // 获取syncPushPackage
             Map<String, Object> syncPushPackage = getMap(body, "syncPushPackage");
             if (syncPushPackage == null) {
                 return null;
             }
-            
+
             // 获取data列表
             List<Object> dataList = getList(syncPushPackage, "data");
             if (dataList == null || dataList.isEmpty()) {
                 return null;
             }
-            
+
             params.setDataList(dataList);
             params.setMessageCount(dataList.size());
-            
+
             return params;
-            
+
         } catch (Exception e) {
             log.error("【账号{}】解析同步包参数失败", accountId, e);
             return null;
         }
     }
-    
+
     @Override
     protected Object doHandle(String accountId, Object params, Map<String, Object> messageData) {
         SyncMessageParams syncParams = (SyncMessageParams) params;
         List<String> decryptedMessages = new ArrayList<>();
-        
+
         // 获取lwp字段
         String lwp = getString(messageData, "lwp");
-        
+
         log.info("【账号{}】收到闲鱼原始消息: lwp={}, messageCount={}", accountId, lwp, syncParams.getMessageCount());
-        
+
         // 处理每条加密消息
         for (int i = 0; i < syncParams.getDataList().size(); i++) {
             Object item = syncParams.getDataList().get(i);
             if (!(item instanceof Map)) {
                 continue;
             }
-            
+
             @SuppressWarnings("unchecked")
             Map<String, Object> syncData = (Map<String, Object>) item;
-            
+
             String encryptedData = getString(syncData, "data");
             if (encryptedData == null) {
                 continue;
             }
-            
+
             log.info("【账号{}】加密消息[{}]: {}", accountId, i, encryptedData);
-            
+
             // 解密消息
             String decryptedData = MessageDecryptUtils.decrypt(encryptedData);
             if (decryptedData != null) {
                 log.info("【账号{}】解密消息[{}]: {}", accountId, i, decryptedData);
                 decryptedMessages.add(decryptedData);
-                
+
                 // 解析并发布事件
                 parseAndPublishEvent(accountId, decryptedData, lwp);
             } else {
                 log.warn("【账号{}】消息解密失败[{}]", accountId, i);
             }
         }
-        
+
         return decryptedMessages;
     }
-    
+
     @Override
     protected void postHandle(String accountId, Object result, Map<String, Object> messageData) {
         // 处理完成，不需要额外日志
     }
-    
+
     /**
      * 解析消息并发布事件
-     * 
+     *
      * @param accountId 账号ID
      * @param decryptedData 解密后的JSON数据
      * @param lwp WebSocket消息路径
@@ -135,54 +135,54 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             // 解析JSON
             @SuppressWarnings("unchecked")
             Map<String, Object> data = objectMapper.readValue(decryptedData, Map.class);
-            
+
             // 检查消息类型
             Object typeObj = data.get("2");
             if (typeObj != null && "2".equals(typeObj.toString())) {
                 // 已读回执，不处理
                 return;
             }
-            
+
             // 检查是否是聊天消息
             Object field1 = data.get("1");
             if (!(field1 instanceof Map)) {
                 return;
             }
-            
+
             @SuppressWarnings("unchecked")
             Map<String, Object> messageInfo = (Map<String, Object>) field1;
-            
+
             // 创建消息实体
             XianyuChatMessage message = new XianyuChatMessage();
             Long accountIdLong = Long.parseLong(accountId);
             message.setXianyuAccountId(accountIdLong);
             message.setLwp(lwp);
-            
+
             // 提取pnm_id（字段1.3）
             String pnmId = extractString(messageInfo, "3");
             if (pnmId == null || pnmId.isEmpty()) {
                 return;
             }
             message.setPnmId(pnmId);
-            
+
             // 提取s_id（字段1.2）
             message.setSId(extractString(messageInfo, "2"));
-            
+
             // 提取时间戳（字段1.5）
             message.setMessageTime(extractLong(messageInfo, "5"));
-            
+
             // 提取字段1.6的内容
             Object field6 = messageInfo.get("6");
             if (field6 instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> field6Map = (Map<String, Object>) field6;
-                
+
                 // 提取字段1.6.3
                 Object field63 = field6Map.get("3");
                 if (field63 instanceof Map) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> field63Map = (Map<String, Object>) field63;
-                    
+
                     // 提取字段1.6.3.5中的contentType
                     String field635 = extractString(field63Map, "5");
                     if (field635 != null) {
@@ -197,18 +197,18 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                     }
                 }
             }
-            
+
             // 提取字段1.10的内容
             Object field10 = messageInfo.get("10");
             if (field10 instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> field10Map = (Map<String, Object>) field10;
-                
+
                 // 提取各个字段
                 message.setMsgContent(extractString(field10Map, "reminderContent"));
                 message.setSenderUserName(extractString(field10Map, "reminderTitle"));
                 message.setSenderUserId(extractString(field10Map, "senderUserId"));
-                
+
                 // 提取reminderUrl并解析商品ID
                 String reminderUrl = extractString(field10Map, "reminderUrl");
                 message.setReminderUrl(reminderUrl);
@@ -216,22 +216,22 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                     String goodsId = extractItemIdFromUrl(reminderUrl);
                     message.setXyGoodsId(goodsId);
                 }
-                
+
                 message.setSenderAppV(extractString(field10Map, "_appVersion"));
                 message.setSenderOsType(extractString(field10Map, "_platform"));
             }
-            
+
             // 保存完整消息体
             message.setCompleteMsg(decryptedData);
-            
+
             // 发布消息接收事件
             publishChatMessageReceivedEvent(message);
-            
+
         } catch (Exception e) {
             log.error("【账号{}】解析消息异常: lwp={}, error={}", accountId, lwp, e.getMessage(), e);
         }
     }
-    
+
     /**
      * 发布聊天消息接收事件
      */
@@ -240,25 +240,25 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             // 转换为 ChatMessageData
             ChatMessageData messageData = new ChatMessageData();
             BeanUtils.copyProperties(message, messageData);
-            
+
             // 从完整消息中提取订单ID
             String orderId = extractOrderIdFromMessage(message.getCompleteMsg());
             messageData.setOrderId(orderId);
-            
+
             log.info("【账号{}】准备发布ChatMessageReceivedEvent事件，完整消息对象: \n" +
-                    "  pnmId={}\n" +
-                    "  sId={}\n" +
-                    "  lwp={}\n" +
-                    "  contentType={}\n" +
-                    "  msgContent={}\n" +
-                    "  xyGoodsId={}\n" +
-                    "  reminderUrl={}\n" +
-                    "  senderUserId={}\n" +
-                    "  senderUserName={}\n" +
-                    "  senderAppV={}\n" +
-                    "  senderOsType={}\n" +
-                    "  messageTime={}\n" +
-                    "  orderId={}", 
+                            "  pnmId={}\n" +
+                            "  sId={}\n" +
+                            "  lwp={}\n" +
+                            "  contentType={}\n" +
+                            "  msgContent={}\n" +
+                            "  xyGoodsId={}\n" +
+                            "  reminderUrl={}\n" +
+                            "  senderUserId={}\n" +
+                            "  senderUserName={}\n" +
+                            "  senderAppV={}\n" +
+                            "  senderOsType={}\n" +
+                            "  messageTime={}\n" +
+                            "  orderId={}",
                     message.getXianyuAccountId(),
                     message.getPnmId(),
                     message.getSId(),
@@ -273,31 +273,31 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                     message.getSenderOsType(),
                     message.getMessageTime(),
                     orderId);
-            
+
             ChatMessageReceivedEvent event = new ChatMessageReceivedEvent(this, messageData);
             eventPublisher.publishEvent(event);
-            
-            log.info("【账号{}】ChatMessageReceivedEvent事件已发布: pnmId={}, orderId={}", 
+
+            log.info("【账号{}】ChatMessageReceivedEvent事件已发布: pnmId={}, orderId={}",
                     message.getXianyuAccountId(), message.getPnmId(), orderId);
         } catch (Exception e) {
-            log.error("【账号{}】发布消息接收事件失败: pnmId={}", 
+            log.error("【账号{}】发布消息接收事件失败: pnmId={}",
                     message.getXianyuAccountId(), message.getPnmId(), e);
         }
     }
-    
+
     /**
      * 从完整消息中提取订单ID
      */
-    private String extractOrderIdFromMessage(String completeMsg) {
+    public static String extractOrderIdFromMessage(String completeMsg) {
         try {
             if (completeMsg == null || completeMsg.isEmpty()) {
                 log.debug("📋 提取订单ID: 消息为空");
                 return null;
             }
-            
+
             @SuppressWarnings("unchecked")
             Map<String, Object> data = objectMapper.readValue(completeMsg, Map.class);
-            
+
             // 从 1.6.3.5 中提取订单ID
             // 路径: 1.6.3.5 (这是一个JSON字符串，需要再次解析)
             Object level1 = data.get("1");
@@ -310,40 +310,38 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                         if (level5 instanceof String) {
                             String jsonStr = (String) level5;
                             log.info("📋 提取订单ID: 找到字段1.6.3.5={}", jsonStr);
-                            
+
                             try {
                                 // 解析嵌套的JSON字符串
                                 @SuppressWarnings("unchecked")
                                 Map<String, Object> contentMap = objectMapper.readValue(jsonStr, Map.class);
-                                
+
                                 // 从 dynamicOperation.changeContent.dxCard.item.main.exContent.button.targetUrl 中提取
-                                Object dynamicOp = contentMap.get("dynamicOperation");
-                                if (dynamicOp instanceof Map) {
-                                    Object changeContent = ((Map<?, ?>) dynamicOp).get("changeContent");
-                                    if (changeContent instanceof Map) {
-                                        Object dxCard = ((Map<?, ?>) changeContent).get("dxCard");
-                                        if (dxCard instanceof Map) {
-                                            Object item = ((Map<?, ?>) dxCard).get("item");
-                                            if (item instanceof Map) {
-                                                Object main = ((Map<?, ?>) item).get("main");
-                                                if (main instanceof Map) {
-                                                    Object exContent = ((Map<?, ?>) main).get("exContent");
-                                                    if (exContent instanceof Map) {
-                                                        Object button = ((Map<?, ?>) exContent).get("button");
-                                                        if (button instanceof Map) {
-                                                            String targetUrl = (String) ((Map<?, ?>) button).get("targetUrl");
-                                                            log.info("📋 提取订单ID: targetUrl={}", targetUrl);
-                                                            
-                                                            if (targetUrl != null && targetUrl.contains("id=")) {
-                                                                // 提取 id 参数
-                                                                String[] parts = targetUrl.split("[?&]");
-                                                                for (String part : parts) {
-                                                                    if (part.startsWith("id=")) {
-                                                                        String orderId = part.substring(3);
-                                                                        log.info("✅ 成功提取订单ID: orderId={}", orderId);
-                                                                        return orderId;
-                                                                    }
-                                                                }
+//                                Object dynamicOp = contentMap.get("dynamicOperation");
+//                                if (dynamicOp instanceof Map) {
+//                                    Object changeContent = ((Map<?, ?>) dynamicOp).get("changeContent");
+//                                    if (changeContent instanceof Map) {
+                                Object dxCard = ((Map<?, ?>) contentMap).get("dxCard");
+                                if (dxCard instanceof Map) {
+                                    Object item = ((Map<?, ?>) dxCard).get("item");
+                                    if (item instanceof Map) {
+                                        Object main = ((Map<?, ?>) item).get("main");
+                                        if (main instanceof Map) {
+                                            Object exContent = ((Map<?, ?>) main).get("exContent");
+                                            if (exContent instanceof Map) {
+                                                Object button = ((Map<?, ?>) exContent).get("button");
+                                                if (button instanceof Map) {
+                                                    String targetUrl = (String) ((Map<?, ?>) button).get("targetUrl");
+                                                    log.info("📋 提取订单ID: targetUrl={}", targetUrl);
+
+                                                    if (targetUrl != null && targetUrl.contains("orderId=")) {
+                                                        // 提取 id 参数
+                                                        String[] parts = targetUrl.split("[?&]");
+                                                        for (String part : parts) {
+                                                            if (part.startsWith("orderId=")) {
+                                                                String orderId = part.split("=")[1];
+                                                                log.info("✅ 成功提取订单ID: orderId={}", orderId);
+                                                                return orderId;
                                                             }
                                                         }
                                                     }
@@ -351,6 +349,8 @@ public class SyncMessageHandler extends AbstractLwpHandler {
                                             }
                                         }
                                     }
+//                                        }
+//                                    }
                                 }
                             } catch (Exception e) {
                                 log.warn("⚠️ 解析字段1.6.3.5的JSON失败", e);
@@ -367,14 +367,14 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             } else {
                 log.warn("⚠️ 字段1不存在或不是Map类型");
             }
-            
+
             return null;
         } catch (Exception e) {
             log.error("❌ 提取订单ID失败", e);
             return null;
         }
     }
-    
+
     /**
      * 从reminder_url中提取itemId（商品ID）
      */
@@ -382,16 +382,16 @@ public class SyncMessageHandler extends AbstractLwpHandler {
         if (url == null || url.isEmpty()) {
             return null;
         }
-        
+
         try {
             int itemIdIndex = url.indexOf("itemId=");
             if (itemIdIndex == -1) {
                 return null;
             }
-            
+
             int startIndex = itemIdIndex + 7;
             int endIndex = url.indexOf("&", startIndex);
-            
+
             if (endIndex == -1) {
                 return url.substring(startIndex);
             } else {
@@ -401,7 +401,7 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             return null;
         }
     }
-    
+
     /**
      * 从Map中提取字符串值
      */
@@ -409,7 +409,7 @@ public class SyncMessageHandler extends AbstractLwpHandler {
         Object value = map.get(key);
         return value != null ? value.toString() : null;
     }
-    
+
     /**
      * 从Map中提取整数值
      */
@@ -427,7 +427,7 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             return null;
         }
     }
-    
+
     /**
      * 从Map中提取长整数值
      */
@@ -445,7 +445,7 @@ public class SyncMessageHandler extends AbstractLwpHandler {
             return null;
         }
     }
-    
+
     /**
      * 同步包消息参数
      */

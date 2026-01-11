@@ -31,7 +31,7 @@ public class AccountController {
 
     @Autowired
     private XianyuAccountMapper accountMapper;
-    
+
     @Autowired
     private AccountService accountService;
 
@@ -58,17 +58,17 @@ public class AccountController {
     public ResultObject<AddAccountRespDTO> addAccount(@RequestBody AccountReqDTO reqDTO) {
         try {
             log.info("添加账号请求: accountNote={}", reqDTO.getAccountNote());
-            
-            if (reqDTO.getCookie() == null || reqDTO.getCookie().isEmpty()) {
+
+            if (reqDTO.getCookieText() == null || reqDTO.getCookieText().isEmpty()) {
                 return ResultObject.failed("Cookie不能为空");
             }
-            
+
             Long accountId = accountService.saveAccountAndCookie(
                     reqDTO.getAccountNote(),
                     reqDTO.getUnb(),
-                    reqDTO.getCookie()
+                    reqDTO.getCookieText()
             );
-            
+
             AddAccountRespDTO respDTO = new AddAccountRespDTO();
             respDTO.setAccountId(accountId);
             respDTO.setMessage("添加成功");
@@ -86,30 +86,30 @@ public class AccountController {
     public ResultObject<AddAccountRespDTO> manualAddAccount(@RequestBody ManualAddAccountReqDTO reqDTO) {
         try {
             log.info("手动添加账号请求: accountNote={}", reqDTO.getAccountNote());
-            
+
             if (reqDTO.getCookie() == null || reqDTO.getCookie().isEmpty()) {
                 return ResultObject.failed("Cookie不能为空");
             }
-            
+
             // 从Cookie中提取unb信息
             String unb = extractUnbFromCookie(reqDTO.getCookie());
             if (unb == null || unb.isEmpty()) {
                 return ResultObject.failed("无法从Cookie中提取UNB信息");
             }
-            
+
             // 检查账号是否已存在
             Long existingAccountId = accountService.getAccountIdByUnb(unb);
             if (existingAccountId != null) {
                 return ResultObject.failed("账号已存在");
             }
-            
+
             // 保存账号和Cookie信息
             Long accountId = accountService.saveAccountAndCookie(
                     reqDTO.getAccountNote(),
                     unb,
                     reqDTO.getCookie()
             );
-            
+
             AddAccountRespDTO respDTO = new AddAccountRespDTO();
             respDTO.setAccountId(accountId);
             respDTO.setMessage("添加成功");
@@ -119,7 +119,7 @@ public class AccountController {
             return ResultObject.failed("添加账号失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 从Cookie字符串中提取UNB值
      *
@@ -130,7 +130,7 @@ public class AccountController {
         if (cookie == null || cookie.isEmpty()) {
             return null;
         }
-        
+
         // 查找unb=后面的值
         String[] cookieParts = cookie.split(";\\s*");
         for (String part : cookieParts) {
@@ -138,7 +138,7 @@ public class AccountController {
                 return part.substring(4); // "unb=".length() = 4
             }
         }
-        
+
         return null;
     }
 
@@ -149,25 +149,25 @@ public class AccountController {
     public ResultObject<UpdateAccountRespDTO> updateAccount(@RequestBody UpdateAccountReqDTO reqDTO) {
         try {
             log.info("更新账号请求: accountId={}", reqDTO.getAccountId());
-            
+
             if (reqDTO.getAccountId() == null) {
                 return ResultObject.failed("账号ID不能为空");
             }
-            
+
             XianyuAccount account = accountMapper.selectById(reqDTO.getAccountId());
             if (account == null) {
                 return ResultObject.failed("账号不存在");
             }
-            
+
             // 只更新账号备注
             if (reqDTO.getAccountNote() != null) {
                 account.setAccountNote(reqDTO.getAccountNote());
             }
-            
+
             accountMapper.updateById(account);
-            
+
             // 不再更新Cookie和UNB
-            
+
             UpdateAccountRespDTO respDTO = new UpdateAccountRespDTO();
             respDTO.setMessage("更新成功");
             return ResultObject.success(respDTO);
@@ -185,15 +185,15 @@ public class AccountController {
         try {
             Long id = reqDTO.getAccountId();
             log.info("删除账号请求: accountId={}", id);
-            
+
             XianyuAccount account = accountMapper.selectById(id);
             if (account == null) {
                 return ResultObject.failed("账号不存在");
             }
-            
+
             // 删除账号关联的所有数据
             accountService.deleteAccountAndRelatedData(id);
-            
+
             DeleteAccountRespDTO respDTO = new DeleteAccountRespDTO();
             respDTO.setMessage("删除成功");
             return ResultObject.success(respDTO);
