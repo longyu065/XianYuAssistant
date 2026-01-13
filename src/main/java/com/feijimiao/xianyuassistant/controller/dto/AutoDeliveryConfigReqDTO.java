@@ -36,4 +36,6 @@ public class AutoDeliveryConfigReqDTO {
      * 自动发货的文本内容
      */
     private String autoDeliveryContent;
+
+    private Integer autoConfirmShipment;
 }
